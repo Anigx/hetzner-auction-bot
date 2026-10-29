@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from config import ConfigError, load_config
+from hetzner_bot.config import ConfigError, load_config
 
 
 def test_load_config_uses_defaults():

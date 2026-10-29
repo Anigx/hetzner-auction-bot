@@ -5,14 +5,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml README.md ./
+COPY src ./src
 
-COPY . .
+RUN pip install --no-cache-dir .
 
 RUN useradd --uid 10001 --create-home bot \
     && mkdir -p /app/data \
     && chown -R bot:bot /app
 USER bot
 
-CMD ["python", "bot.py"]
+CMD ["python", "-m", "hetzner_bot"]

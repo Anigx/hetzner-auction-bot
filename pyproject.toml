@@ -1,3 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hetzner-auction-bot"
+version = "0.2.0"
+description = "Discord-Bot, der Deals aus der Hetzner-Serverbörse beobachtet"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = [
+    "discord.py>=2.4,<3",
+    "httpx>=0.27,<1",
+    "python-dotenv>=1.0,<2",
+    "tzdata>=2024.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0,<9",
+    "pytest-asyncio>=0.23,<1",
+    "pillow>=10",
+    "pyyaml>=6",
+]
+
+[project.scripts]
+hetzner-bot = "hetzner_bot.bot.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+hetzner_bot = ["storage/*.sql"]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]

@@ -2,10 +2,9 @@ from decimal import Decimal
 
 import pytest
 
-from cogs.commands import build_criteria, channel_warning, snap_to_current
-from filters import Criteria, CriteriaError
-from hetzner.models import Server
-from store import Store
+from hetzner_bot.bot.cogs.watch import build_criteria, snap_to_current
+from hetzner_bot.bot.texts import channel_warning
+from hetzner_bot.domain import Criteria, CriteriaError
 
 
 def test_build_criteria_maps_options():
@@ -58,34 +57,12 @@ def test_build_criteria_accepts_cpu_only():
     assert crit.cpu_contains == "ryzen"
 
 
-def test_snap_marks_all_current_matches(tmp_path):
-    store = Store(tmp_path / "t.sqlite3")
-    store.init_schema()
-    rec = store.save_filter(1, 2, "standard", Criteria(min_ram=1), mention=False)
-    servers = [
-        Server(
-            id=10,
-            cpu_name="X",
-            sockets=1,
-            ram_gb=64,
-            ecc=True,
-            storage_total_gb=1000,
-            nvme_gb=0,
-            sata_gb=0,
-            hdd_gb=0,
-            location="FSN",
-            datacenter="FSN1-DC1",
-            bandwidth_mbit=1000,
-            traffic="unlimited",
-            price_month_eur=Decimal("45"),
-            price_hour_eur=Decimal("0.05"),
-            setup_eur=Decimal("0"),
-            extra_ips=0,
-            reduce_next_at=None,
-        )
-    ]
-    assert snap_to_current(store, rec, servers) == 1
-    assert store.is_seen(rec.id, 10) is True
+def test_snap_marks_all_current_matches(store, make_server):
+    record = store.save_filter(1, 2, "standard", Criteria(min_ram=1), mention=False)
+    servers = [make_server(id=10)]
+
+    assert snap_to_current(store, record, servers) == 1
+    assert store.is_seen(record.id, 10) is True
     assert store.baseline_price(1, 10) == Decimal("45")
 
 

@@ -1,6 +1,6 @@
 import pytest
 
-from cogs.commands import resolve_guild_id
+from hetzner_bot.bot.guards import resolve_guild_id
 
 
 class FakeGuild:

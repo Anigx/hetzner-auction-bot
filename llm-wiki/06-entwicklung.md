@@ -4,17 +4,19 @@
 
 ```bash
 uv venv --python 3.12 .venv
-uv pip install -r requirements.txt --python .venv/Scripts/python.exe
+uv pip install -e ".[dev]" --python .venv/Scripts/python.exe
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Kein System-Python nötig; `uv` holt sich 3.12 selbst. `pyproject.toml` setzt
-`pythonpath = ["."]`, damit die Tests die Module im Repo-Root finden.
+Kein System-Python nötig; `uv` holt sich 3.12 selbst. Das Paket liegt unter `src/`
+und wird editierbar installiert; `pyproject.toml` bündelt Laufzeit- und
+Dev-Abhängigkeiten.
 
 ## Arbeitsweise
 
-- **Test zuerst.** Jede Regel in `filters.py`, jeder Ablauf in `poller.py` und
-  `store.py` hat einen Test, der vor der Implementierung rot war.
+- **Test zuerst.** Jede Regel in `engine/matching.py`, jeder Ablauf in
+  `engine/poller.py` und `storage/store.py` hat einen Test, der vor der
+  Implementierung rot war.
 - **Keine Netzwerkzugriffe in Tests.** Fixture plus `httpx.MockTransport`.
 - **`TASKS.md` ist die Wahrheit über den Fortschritt**, `CHANGELOG.md` über die
   Historie. Beides gehört zur Definition von „fertig".
@@ -45,7 +47,7 @@ curl.exe -s -o tests/fixtures/auction_snapshot.json \
 ```
 
 Der CPU-Test ist der Wächter: Schlägt er fehl, fehlt ein Modell in
-`hetzner/cpus.py`.
+`src/hetzner_bot/auction/cpus.py`.
 
 ## Neue Kriterien
 
@@ -58,7 +60,7 @@ Der CPU-Test ist der Wächter: Schlägt er fehl, fehlt ein Modell in
 ## Banner
 
 `tools/make_banner.py` rendert `docs/assets/banner.png` mit Pillow (nur
-Build-Zeit, nicht in `requirements.txt`):
+Build-Zeit, steckt in den Dev-Extras `.[dev]`):
 
 ```bash
 uv pip install pillow --python .venv/Scripts/python.exe

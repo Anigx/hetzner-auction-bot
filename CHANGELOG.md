@@ -38,6 +38,11 @@ Alle nennenswerten Änderungen an diesem Projekt. Format nach
 - 2026-10-29 (Review): Kaputter `ReduceNextTimestamp` bricht den Lauf nicht mehr ab.
 
 ### Geändert
+- 2026-10-29: Python-Code nach `src/hetzner_bot/` umgezogen: ein Paket statt loser
+  Module, Domänenobjekte in `domain/`, reines Matching getrennt vom Poll-Lauf,
+  Commands in eigene Cogs, Schema als `schema.sql`, gemeinsame Testfabriken in
+  `tests/factories.py`. Abhängigkeiten stehen jetzt in `pyproject.toml`
+  (`requirements.txt` entfällt), Start über `python -m hetzner_bot`. Release `v0.2.0`.
 - 2026-10-29: Action-Versionen auf den Node-24-Stand gehoben (`checkout@v7`,
   `setup-python@v7`, Docker-Actions `v4`/`v6`/`v7`). Release `v0.1.1`.
 - 2026-10-29: Review-Runde eingearbeitet: Baseline getrennt von `posts` (`seen`

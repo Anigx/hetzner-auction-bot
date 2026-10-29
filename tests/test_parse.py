@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from hetzner.client import ParseError, parse_servers
+from hetzner_bot.auction import ParseError, parse_servers
 
 FIXTURE = json.loads(Path("tests/fixtures/auction_snapshot.json").read_text("utf-8"))
 

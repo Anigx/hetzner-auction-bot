@@ -1,17 +1,6 @@
 from decimal import Decimal
 
-import pytest
-
-from filters import Criteria
-from store import Store
-
-
-@pytest.fixture
-def store(tmp_path):
-    s = Store(tmp_path / "test.sqlite3")
-    s.init_schema()
-    yield s
-    s.close()
+from hetzner_bot.domain import Criteria
 
 
 def test_channel_roundtrip(store):

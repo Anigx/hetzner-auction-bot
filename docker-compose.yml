@@ -9,7 +9,7 @@ services:
       - bot-data:/app/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "healthcheck.py"]
+      test: ["CMD", "python", "-m", "hetzner_bot.healthcheck"]
       interval: 5m
       timeout: 10s
       retries: 2

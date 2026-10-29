@@ -6,34 +6,42 @@ Kernlogik kennt weder Discord noch Netzwerk. Deshalb lässt sich alles, was übe
 Treffer entscheidet, ohne Token und ohne Server testen.
 
 ```
-Discord ──▶ cogs/commands.py ──▶ store.py (SQLite)
+Discord ──▶ bot/cogs/*.py ──▶ storage/store.py (SQLite)
                    │
                    ▼
-              poller.py ──▶ find_candidates()  ◀── filters.py (rein)
-                   │              │
-                   │              └────────────── hetzner/cpus.py (rein)
-                   ▼
-         hetzner/client.py ──▶ hetzner/models.py
+              engine/poller.py ──▶ engine/candidates.py
+                   │                      │
+                   │                      └──▶ engine/matching.py  (rein)
+                   ▼                                   │
+         auction/client.py ──▶ domain/server.py        └──▶ auction/cpus.py (rein)
                    │
                    ▼
-              notify.py (Embed) ──▶ Discord
+              delivery/embeds.py ──▶ Discord
 ```
 
 ## Dateien und ihre Aufgabe
 
 | Datei | Aufgabe | Kennt Discord? |
 |---|---|---|
-| `bot.py` | Kompositionswurzel: Config, Bot, Poll-Loop, Logging | ja |
-| `config.py` | Env lesen und prüfen, `Config` | nein |
-| `hetzner/models.py` | `Server` als frozen dataclass | nein |
-| `hetzner/client.py` | HTTP mit Retry, JSON → `Server`, `ParseError`/`FetchError` | nein |
-| `hetzner/cpus.py` | CPU-Name → physische Kerne | nein |
-| `filters.py` | `Criteria`, Validierung, `matches()`, `FilterRecord` | nein |
-| `poller.py` | `find_candidates()` (rein) und `Poller` (Ablauf, Zustellung) | nur im Poller-Teil |
-| `store.py` | SQLite: Kanal, Filter, `seen`, `posts`, `baselines`, `queue` | nein |
-| `notify.py` | Embed bauen, Ping-Text | nur `discord.Embed` |
-| `cogs/commands.py` | Slash-Commands, Rechte, Antworten | ja |
-| `healthcheck.py` | Docker-Healthcheck über `data/last_poll` | nein |
+| `src/hetzner_bot/__main__.py` | Einstieg für `python -m hetzner_bot` | nein |
+| `src/hetzner_bot/config.py` | Env lesen und prüfen, `Config` | nein |
+| `src/hetzner_bot/healthcheck.py` | Docker-Healthcheck über `data/last_poll` | nein |
+| `src/hetzner_bot/domain/server.py` | `Server` als frozen dataclass | nein |
+| `src/hetzner_bot/domain/criteria.py` | `Criteria`, Validierung, JSON | nein |
+| `src/hetzner_bot/domain/records.py` | `FilterRecord`, `Candidate`, `QueuedItem` | nein |
+| `src/hetzner_bot/auction/client.py` | HTTP mit Retry, JSON → `Server`, `ParseError`/`FetchError` | nein |
+| `src/hetzner_bot/auction/cpus.py` | CPU-Name → physische Kerne | nein |
+| `src/hetzner_bot/engine/matching.py` | `matches()` | nein |
+| `src/hetzner_bot/engine/candidates.py` | `find_candidates()` — reine Funktion | nein |
+| `src/hetzner_bot/engine/poller.py` | `Poller`: Ablauf, Warteschlange, Zustellung | ja (nur `get_channel`/`send`) |
+| `src/hetzner_bot/storage/store.py` + `schema.sql` | SQLite: Kanal, Filter, `seen`, `posts`, `baselines`, `queue` | nein |
+| `src/hetzner_bot/delivery/embeds.py` | Embed bauen, Ping-Text | nur `discord.Embed` |
+| `src/hetzner_bot/bot/app.py` | Kompositionswurzel: Bot, Poll-Loop, Einstieg | ja |
+| `src/hetzner_bot/bot/guards.py` | Rechteprüfungen | ja |
+| `src/hetzner_bot/bot/texts.py` | Deutsche Texte, Filterbeschreibung | nein |
+| `src/hetzner_bot/bot/cogs/setup.py` | `/setup` | ja |
+| `src/hetzner_bot/bot/cogs/watch.py` | `/watch` + Baseline | ja |
+| `src/hetzner_bot/bot/cogs/manage.py` | `/filters`, `/unwatch`, `/pause`, `/resume`, `/status` | ja |
 | `tools/make_banner.py` | README-Banner rendern (nur Build-Zeit) | nein |
 
 ## Warum diese Schnitte
@@ -75,9 +83,9 @@ Preiskorrektur — sonst würde ein „vorher 45 €" erscheinen, das niemand ge
 
 - Neues Kriterium → `filters.Criteria` + `matches()` + `/watch`-Option + Test.
 - Neue Datenquelle/anderes Feld → `hetzner/` plus Fixture.
-- Neue Tabelle/Spalte → `store.py`-Schema **und** Migration in `init_schema()`.
-- Neuer Command → `cogs/commands.py`; Logik, die testbar sein soll, als freie
-  Funktion daneben.
+- Neue Tabelle/Spalte → `storage/schema.sql` **und** Migration in `init_schema()`.
+- Neuer Command → eigenes Modul in `bot/cogs/`; Logik, die testbar sein soll, als
+  freie Funktion daneben (`build_criteria`, `snap_to_current`).
 
 ---
 

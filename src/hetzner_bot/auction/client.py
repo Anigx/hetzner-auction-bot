@@ -9,7 +9,7 @@ from typing import Any
 
 import httpx
 
-from hetzner.models import Server
+from hetzner_bot.domain import Server
 
 AUCTION_URL = "https://www.hetzner.com/_resources/app/data/app/live_data_sb.json"
 
@@ -76,8 +76,6 @@ def _parse_server(raw: dict[str, Any]) -> Server:
     prices = _as_dict(raw.get("Prices"))
     timer = _as_dict(raw.get("Timer"))
 
-    reduce_next_at = _parse_reduce_ts(timer.get("ReduceNextTimestamp"))
-
     return Server(
         id=_as_int(raw.get("Id")),
         cpu_name=str(cpu.get("Name") or "").strip(),
@@ -96,14 +94,14 @@ def _parse_server(raw: dict[str, Any]) -> Server:
         price_hour_eur=_as_decimal(_as_dict(prices.get("hourly")).get("EUR")),
         setup_eur=_as_decimal(_as_dict(prices.get("setup")).get("EUR")),
         extra_ips=_as_int(_as_dict(raw.get("IPPrices")).get("Amount")),
-        reduce_next_at=reduce_next_at,
+        reduce_next_at=_parse_reduce_ts(timer.get("ReduceNextTimestamp")),
     )
 
 
 def parse_servers(payload: dict[str, Any]) -> list[Server]:
     """Wandelt die Auktions-JSON in Server-Objekte.
 
-    Eine fehlende, leere oder falsch typisierte `server`-Liste ist ein Fehler und
+    Eine fehlende, leere oder falsch typisierte ``server``-Liste ist ein Fehler und
     keine leere Auktion — sonst würde ein Formatwechsel still als "keine Server"
     durchgehen und die Warteschlange leeren.
     """
@@ -133,7 +131,7 @@ async def fetch_servers(
         except httpx.HTTPError as exc:
             last_error = f"{type(exc).__name__}: {exc}"
         except ValueError as exc:
-            last_error = f"ungueltiges JSON: {exc}"
+            last_error = f"ungueltige Antwort: {exc}"
 
         if attempt < retries - 1 and backoff > 0:
             await asyncio.sleep(backoff * (2**attempt))

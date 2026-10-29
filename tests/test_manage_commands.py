@@ -1,7 +1,7 @@
 from decimal import Decimal
 
-from cogs.commands import describe_filter
-from filters import Criteria, FilterRecord
+from hetzner_bot.bot.texts import describe_filter
+from hetzner_bot.domain import Criteria, FilterRecord
 
 
 def test_describe_filter_lists_criteria():

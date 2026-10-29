@@ -103,21 +103,21 @@ Optionale Umgebungsvariablen: `AUCTION_URL` (andere Datenquelle),
 
 ```bash
 uv venv --python 3.12 .venv
-uv pip install -r requirements.txt --python .venv/Scripts/python.exe
+uv pip install -e ".[dev]" --python .venv/Scripts/python.exe
 .venv/Scripts/python.exe -m pytest -q
 ```
 
 Tests sprechen nie mit dem Netz: Sie nutzen den Snapshot in
 `tests/fixtures/auction_snapshot.json` und `httpx.MockTransport`.
 
-Die Kernzahlen der CPUs stehen in `hetzner/cpus.py`. Kommt in der Auktion ein neues
+Die Kernzahlen der CPUs stehen in `src/hetzner_bot/auction/cpus.py`. Kommt in der
+Auktion ein neues
 Modell dazu, schlägt `test_every_cpu_in_fixture_is_known` fehl — dann Tabelle
 ergänzen und den Snapshot neu ziehen.
 
-Das Banner entsteht aus `tools/make_banner.py` (braucht `pillow`, nur zum Bauen):
+Das Banner entsteht aus `tools/make_banner.py` (Pillow steckt in den Dev-Extras):
 
 ```bash
-uv pip install pillow --python .venv/Scripts/python.exe
 .venv/Scripts/python.exe tools/make_banner.py
 ```
 

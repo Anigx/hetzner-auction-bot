@@ -1,8 +1,7 @@
 import json
 from pathlib import Path
 
-from hetzner.client import parse_servers
-from hetzner.cpus import cores_for, unknown_cpu_names
+from hetzner_bot.auction import cores_for, parse_servers, unknown_cpu_names
 
 
 def test_known_cpus():

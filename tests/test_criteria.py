@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from filters import Criteria, CriteriaError
+from hetzner_bot.domain import Criteria, CriteriaError
 
 
 def test_empty_criteria_is_rejected():

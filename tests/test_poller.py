@@ -2,9 +2,8 @@ from decimal import Decimal
 
 import pytest
 
-from filters import Criteria
-from poller import Poller
-from store import Store
+from hetzner_bot.domain import Criteria
+from hetzner_bot.engine import Poller
 
 
 class FakeChannel:
@@ -28,41 +27,16 @@ class FakeBot:
         return self.channel
 
 
-def make_server(id=10, price="45"):
-    from hetzner.models import Server
-
-    return Server(
-        id=id,
-        cpu_name="AMD Ryzen 9 5950X",
-        sockets=1,
-        ram_gb=64,
-        ecc=True,
-        storage_total_gb=4096,
-        nvme_gb=0,
-        sata_gb=0,
-        hdd_gb=8000,
-        location="FSN",
-        datacenter="FSN1-DC14",
-        bandwidth_mbit=1000,
-        traffic="unlimited",
-        price_month_eur=Decimal(price),
-        price_hour_eur=Decimal("0.05"),
-        setup_eur=Decimal("0"),
-        extra_ips=0,
-        reduce_next_at=None,
-    )
-
-
-@pytest.fixture
-def store(tmp_path):
-    s = Store(tmp_path / "t.sqlite3")
-    s.init_schema()
-    yield s
-    s.close()
+class FakeConfig:
+    def __init__(self, tmp_path):
+        self.database_path = tmp_path / "data" / "bot.sqlite3"
+        self.max_posts_per_run = 15
+        self.poll_minutes = 10
+        self.auction_url = "https://example.invalid"
 
 
 @pytest.mark.asyncio
-async def test_run_posts_and_marks_seen(store):
+async def test_run_posts_and_marks_seen(store, make_server):
     store.set_channel(1, 99)
     store.save_filter(1, 2, "standard", Criteria(min_ram=64), mention=True)
     channel = FakeChannel()
@@ -74,7 +48,7 @@ async def test_run_posts_and_marks_seen(store):
 
 
 @pytest.mark.asyncio
-async def test_second_run_posts_nothing(store):
+async def test_second_run_posts_nothing(store, make_server):
     store.set_channel(1, 99)
     store.save_filter(1, 2, "standard", Criteria(min_ram=64), mention=False)
     channel = FakeChannel()
@@ -86,10 +60,12 @@ async def test_second_run_posts_nothing(store):
 
 
 @pytest.mark.asyncio
-async def test_failed_send_is_queued_not_recorded(store):
+async def test_failed_send_is_queued_not_recorded(store, make_server):
     store.set_channel(1, 99)
     store.save_filter(1, 2, "standard", Criteria(min_ram=64), mention=False)
-    poller = Poller(FakeBot(FakeChannel(fail=True)), store, fetch=lambda: [make_server()], max_posts=15)
+    poller = Poller(
+        FakeBot(FakeChannel(fail=True)), store, fetch=lambda: [make_server()], max_posts=15
+    )
     report = await poller.run_once()
     assert report.posted == 0
     assert report.queued == 1
@@ -108,16 +84,8 @@ async def test_vanished_queued_server_is_dropped(store):
     assert store.queued() == []
 
 
-class FakeConfig:
-    def __init__(self, tmp_path):
-        self.database_path = tmp_path / "data" / "bot.sqlite3"
-        self.max_posts_per_run = 15
-        self.poll_minutes = 10
-        self.auction_url = "https://example.invalid"
-
-
 @pytest.mark.asyncio
-async def test_successful_run_writes_heartbeat(store, tmp_path):
+async def test_successful_run_writes_heartbeat(store, make_server, tmp_path):
     store.set_channel(1, 99)
     store.save_filter(1, 2, "standard", Criteria(min_ram=64), mention=False)
     poller = Poller(
@@ -128,7 +96,7 @@ async def test_successful_run_writes_heartbeat(store, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_broken_channel_gives_up_after_three_attempts(store):
+async def test_broken_channel_gives_up_after_three_attempts(store, make_server):
     store.set_channel(1, 99)
     store.save_filter(1, 2, "standard", Criteria(min_ram=64), mention=False)
     channel = FakeChannel(fail=True)
@@ -161,7 +129,7 @@ async def test_outage_message_is_sent_once_per_guild(store):
 
 
 @pytest.mark.asyncio
-async def test_pending_baseline_is_applied_on_next_run(store):
+async def test_pending_baseline_is_applied_on_next_run(store, make_server):
     store.set_channel(1, 99)
     record = store.save_filter(1, 2, "standard", Criteria(min_ram=64), mention=False)
     store.set_baseline_pending(record.id, True)

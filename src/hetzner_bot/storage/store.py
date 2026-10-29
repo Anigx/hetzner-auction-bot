@@ -4,72 +4,13 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
 from typing import Iterable, Sequence
 
-from filters import Criteria, FilterRecord
+from hetzner_bot.domain import Candidate, Criteria, FilterRecord, QueuedItem
 
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS guilds (
-    guild_id    INTEGER PRIMARY KEY,
-    channel_id  INTEGER NOT NULL,
-    updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS filters (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    guild_id      INTEGER NOT NULL,
-    user_id       INTEGER NOT NULL,
-    name          TEXT NOT NULL,
-    criteria_json TEXT NOT NULL,
-    mention       INTEGER NOT NULL DEFAULT 0,
-    active        INTEGER NOT NULL DEFAULT 1,
-    baseline_pending INTEGER NOT NULL DEFAULT 0,
-    created_at    TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE (guild_id, user_id, name)
-);
-
-CREATE TABLE IF NOT EXISTS seen (
-    filter_id INTEGER NOT NULL,
-    server_id INTEGER NOT NULL,
-    PRIMARY KEY (filter_id, server_id)
-);
-
-CREATE TABLE IF NOT EXISTS posts (
-    guild_id       INTEGER NOT NULL,
-    server_id      INTEGER NOT NULL,
-    last_price_eur TEXT NOT NULL,
-    posted_at      TEXT NOT NULL DEFAULT (datetime('now')),
-    PRIMARY KEY (guild_id, server_id)
-);
-
-CREATE TABLE IF NOT EXISTS baselines (
-    guild_id    INTEGER NOT NULL,
-    server_id   INTEGER NOT NULL,
-    price_eur   TEXT NOT NULL,
-    recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
-    PRIMARY KEY (guild_id, server_id)
-);
-
-CREATE TABLE IF NOT EXISTS queue (
-    guild_id     INTEGER NOT NULL,
-    server_id    INTEGER NOT NULL,
-    filter_ids   TEXT NOT NULL,
-    first_seen_at TEXT NOT NULL DEFAULT (datetime('now')),
-    attempts     INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY (guild_id, server_id)
-);
-"""
-
-
-@dataclass(frozen=True)
-class QueuedItem:
-    guild_id: int
-    server_id: int
-    filter_ids: tuple[int, ...]
-    attempts: int
+SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 
 class Store:
@@ -83,7 +24,7 @@ class Store:
         self._db.execute("PRAGMA foreign_keys=ON")
 
     def init_schema(self) -> None:
-        self._db.executescript(SCHEMA)
+        self._db.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
         # Migration fuer Datenbanken aus der Zeit vor baseline_pending.
         try:
             self._db.execute(
@@ -224,6 +165,26 @@ class Store:
         ).fetchone()
         return row is not None
 
+    def record_baseline(self, guild_id: int, server_id: int, price: Decimal) -> None:
+        self._db.execute(
+            """
+            INSERT INTO baselines (guild_id, server_id, price_eur, recorded_at)
+            VALUES (?, ?, ?, datetime('now'))
+            ON CONFLICT(guild_id, server_id) DO UPDATE SET
+                price_eur = excluded.price_eur,
+                recorded_at = excluded.recorded_at
+            """,
+            (guild_id, server_id, str(price)),
+        )
+        self._db.commit()
+
+    def baseline_price(self, guild_id: int, server_id: int) -> Decimal | None:
+        row = self._db.execute(
+            "SELECT price_eur FROM baselines WHERE guild_id = ? AND server_id = ?",
+            (guild_id, server_id),
+        ).fetchone()
+        return None if row is None else Decimal(row["price_eur"])
+
     # -- Posts ------------------------------------------------------------
 
     def last_price(self, guild_id: int, server_id: int) -> Decimal | None:
@@ -245,28 +206,6 @@ class Store:
             (guild_id, server_id, str(price)),
         )
         self._db.commit()
-
-    # -- Baseline ---------------------------------------------------------
-
-    def record_baseline(self, guild_id: int, server_id: int, price: Decimal) -> None:
-        self._db.execute(
-            """
-            INSERT INTO baselines (guild_id, server_id, price_eur, recorded_at)
-            VALUES (?, ?, ?, datetime('now'))
-            ON CONFLICT(guild_id, server_id) DO UPDATE SET
-                price_eur = excluded.price_eur,
-                recorded_at = excluded.recorded_at
-            """,
-            (guild_id, server_id, str(price)),
-        )
-        self._db.commit()
-
-    def baseline_price(self, guild_id: int, server_id: int) -> Decimal | None:
-        row = self._db.execute(
-            "SELECT price_eur FROM baselines WHERE guild_id = ? AND server_id = ?",
-            (guild_id, server_id),
-        ).fetchone()
-        return None if row is None else Decimal(row["price_eur"])
 
     # -- Warteschlange ----------------------------------------------------
 

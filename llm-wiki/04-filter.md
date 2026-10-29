@@ -25,7 +25,8 @@ ohne Migration.
 ## Kernzahlen: warum eine Tabelle
 
 `Hardware.CPU.CoreCount` ist die **Sockelzahl** (immer `1`). Es gibt kein Feld für
-Kerne oder Threads. Deshalb steht in `hetzner/cpus.py` eine gepflegte Tabelle
+Kerne oder Threads. Deshalb steht in `src/hetzner_bot/auction/cpus.py` eine
+gepflegte Tabelle
 CPU-Modell → physische Kerne (aktuell 24 Modelle).
 
 Unbekannte CPU heißt: `min_cores` greift **nicht** (kein stiller Treffer), dafür

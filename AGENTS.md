@@ -39,7 +39,7 @@ Details: [01 — Überblick](llm-wiki/01-ueberblick.md).
 
 ```bash
 uv venv --python 3.12 .venv
-uv pip install -r requirements.txt --python .venv/Scripts/python.exe
+uv pip install -e ".[dev]" --python .venv/Scripts/python.exe
 .venv/Scripts/python.exe -m pytest -q
 docker compose pull && docker compose up -d
 docker compose logs -f bot

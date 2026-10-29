@@ -1,8 +1,6 @@
-import os
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 
-import healthcheck
+from hetzner_bot import healthcheck
 
 
 def test_fresh_heartbeat_is_healthy(tmp_path, monkeypatch):

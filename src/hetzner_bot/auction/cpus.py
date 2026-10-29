@@ -1,17 +1,14 @@
 """Physische Kerne je CPU-Modell der Serverbörse.
 
-`Hardware.CPU.CoreCount` aus der Hetzner-JSON ist die Anzahl der Sockel (immer 1),
+``Hardware.CPU.CoreCount`` aus der Hetzner-JSON ist die Anzahl der Sockel (immer 1),
 nicht die Kerne. Deshalb steht die Kernzahl hier als gepflegte Tabelle.
-Der Fixture-Test in `tests/test_cpus.py` schlaegt fehl, sobald eine neue CPU
-in der Auktion auftaucht.
+``test_every_cpu_in_fixture_is_known`` schlägt fehl, sobald eine neue CPU in der
+Auktion auftaucht.
 """
 
 from __future__ import annotations
 
-import logging
 from typing import Iterable
-
-log = logging.getLogger(__name__)
 
 CORES_BY_CPU: dict[str, int] = {
     "AMD EPYC 7502P": 32,

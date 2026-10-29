@@ -224,13 +224,16 @@ Die DB liegt im Docker-Volume, ein Neustart verliert nichts.
 ## Aufbau
 
 ```
-bot.py              Start, Intents, Command-Registrierung
-hetzner/client.py   Fetch + Parsing in Dataclasses
-filters.py          Kriterien, Matching, Validierung
-store.py            SQLite-Zugriff
-notify.py           Embed-Bau, Pings, Posten
-config.py           Token, Intervall, Pfade aus Env
-tests/              Matching, Dedupe, Preisverfall, Parser gegen Fixture
+src/hetzner_bot/__main__.py      Einstieg (python -m hetzner_bot)
+src/hetzner_bot/config.py        Token, Intervall, Pfade aus Env
+src/hetzner_bot/domain/          Server, Criteria, FilterRecord, Candidate
+src/hetzner_bot/auction/         HTTP + Parsing, CPU-Tabelle
+src/hetzner_bot/engine/          Matching, Treffer-Auswahl, Poll-Lauf
+src/hetzner_bot/storage/         SQLite + schema.sql
+src/hetzner_bot/delivery/        Embeds und Pings
+src/hetzner_bot/bot/             Bot, Cogs, Texte
+tests/                           Unit-Tests, Fixture der echten JSON-Antwort
+data/                            SQLite-Datei (im Docker-Volume)
 ```
 
 ## Betrieb

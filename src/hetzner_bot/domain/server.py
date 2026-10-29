@@ -1,4 +1,4 @@
-"""Datenmodell der Hetzner-Serverbörse."""
+"""Der Server aus der Auktions-JSON."""
 
 from __future__ import annotations
 

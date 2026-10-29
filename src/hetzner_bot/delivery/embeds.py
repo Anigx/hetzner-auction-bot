@@ -7,8 +7,8 @@ from typing import Sequence
 
 import discord
 
-from hetzner.cpus import cores_for
-from hetzner.models import Server
+from hetzner_bot.auction.cpus import cores_for
+from hetzner_bot.domain import Server
 
 BRAND_COLOR = 0x00A88F
 AUCTION_URL = "https://www.hetzner.com/sb/"
@@ -45,7 +45,9 @@ def build_embed(server: Server, previous_price: Decimal | None = None) -> discor
         color=BRAND_COLOR,
         url=AUCTION_URL,
     )
-    embed.add_field(name="Kerne", value=str(cores) if cores is not None else "unbekannt", inline=True)
+    embed.add_field(
+        name="Kerne", value=str(cores) if cores is not None else "unbekannt", inline=True
+    )
     embed.add_field(name="RAM", value=ram, inline=True)
     embed.add_field(name="Standort", value=server.datacenter or "unbekannt", inline=True)
     embed.add_field(name="Platten", value=_disk_summary(server), inline=False)

@@ -1,7 +1,7 @@
 import httpx
 import pytest
 
-from hetzner.client import FetchError, fetch_servers
+from hetzner_bot.auction import FetchError, fetch_servers
 
 PAYLOAD = {"server": [{"Id": 7, "Hardware": {}, "Prices": {}, "Details": {}, "Timer": {}}]}
 
