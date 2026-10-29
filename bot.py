@@ -7,12 +7,13 @@ from typing import Any
 
 import discord
 import httpx
-from discord.ext import commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
 from cogs.commands import Commands
 from config import Config, load_config
 from hetzner.models import Server
+from poller import Poller
 from store import Store
 
 log = logging.getLogger("hetzner_bot")
@@ -27,7 +28,9 @@ class HetznerBot(commands.Bot):
         self.store = Store(config.database_path)
         self.http: httpx.AsyncClient | None = None
         self.last_servers: list[Server] = []
-        self.poller: Any = None
+        self.last_poll_at: Any = None
+        self.last_error: str | None = None
+        self.poller: Poller | None = None
 
     async def setup_hook(self) -> None:
         self.store.init_schema()
@@ -35,13 +38,30 @@ class HetznerBot(commands.Bot):
             timeout=10.0,
             headers={"User-Agent": _USER_AGENT},
         )
+        self.poller = Poller(self, self.store, self.config)
+        self.poll_loop.change_interval(minutes=self.config.poll_minutes)
         await self.add_cog(Commands(self))
 
     async def on_ready(self) -> None:
         await self.tree.sync()
         log.info("Eingeloggt als %s", self.user)
+        if not self.poll_loop.is_running():
+            self.poll_loop.start()
+
+    @tasks.loop(minutes=10)
+    async def poll_loop(self) -> None:
+        assert self.poller is not None
+        report = await self.poller.run_once()
+        log.info(
+            "Poll: %s Server, %s gepostet, %s wartend, fehlgeschlagen=%s",
+            report.fetched,
+            report.posted,
+            report.queued,
+            report.failed,
+        )
 
     async def close(self) -> None:
+        self.poll_loop.cancel()
         if self.http is not None:
             await self.http.aclose()
         self.store.close()
