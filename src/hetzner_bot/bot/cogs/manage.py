@@ -8,13 +8,71 @@ from discord.ext import commands
 
 from hetzner_bot.auction.cpus import unknown_cpu_names
 from hetzner_bot.bot.guards import require_guild_id
-from hetzner_bot.bot.texts import channel_warning, describe_filter, format_local, guild_count_warning
+from hetzner_bot.bot.texts import (
+    HELP_TEXT,
+    channel_warning,
+    describe_filter,
+    format_local,
+    format_match_line,
+    guild_count_warning,
+)
 from hetzner_bot.engine.matching import matches
 
 
 class ManageCog(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+
+    @app_commands.command(name="help", description="Erklaert Befehle, Filter und Zustellung.")
+    async def help_cmd(self, interaction: discord.Interaction) -> None:
+        await interaction.response.send_message(HELP_TEXT, ephemeral=True)
+
+    @app_commands.command(
+        name="matches", description="Zeigt Server, die gerade zu deinen Filtern passen."
+    )
+    async def matches_cmd(self, interaction: discord.Interaction) -> None:
+        await interaction.response.defer(ephemeral=True)
+        try:
+            guild_id = require_guild_id(interaction)
+        except ValueError as exc:
+            await interaction.followup.send(str(exc), ephemeral=True)
+            return
+
+        records = self.bot.store.list_filters(
+            guild_id, interaction.user.id, active_only=True
+        )
+        if not records:
+            await interaction.followup.send(
+                "Du hast keinen aktiven Filter. Leg einen mit `/watch` an.", ephemeral=True
+            )
+            return
+
+        try:
+            servers = await self.bot.current_servers()
+        except Exception as exc:  # noqa: BLE001 - dem Nutzer eine klare Meldung geben
+            await interaction.followup.send(
+                f"Serverbörse gerade nicht erreichbar: {exc}", ephemeral=True
+            )
+            return
+
+        hits = {
+            server.id: server
+            for record in records
+            for server in servers
+            if matches(record.criteria, server)
+        }
+        if not hits:
+            await interaction.followup.send(
+                "Gerade passt kein Server zu deinen Filtern.", ephemeral=True
+            )
+            return
+
+        ordered = sorted(hits.values(), key=lambda s: (s.price_month_eur, s.id))
+        lines = [f"**{len(ordered)} Server passen gerade:**"]
+        lines += [format_match_line(server) for server in ordered[:8]]
+        if len(ordered) > 8:
+            lines.append(f"… und {len(ordered) - 8} weitere")
+        await interaction.followup.send("\n".join(lines), ephemeral=True)
 
     @app_commands.command(name="filters", description="Zeigt deine gespeicherten Filter.")
     async def list_filters_cmd(self, interaction: discord.Interaction) -> None:

@@ -33,3 +33,9 @@ def test_embed_without_drop_has_no_old_price():
 def test_mention_prefix_deduplicates():
     assert mention_prefix([3, 1, 3]) == "<@1> <@3>"
     assert mention_prefix([]) == ""
+
+
+def test_embed_links_directly_to_the_server():
+    embed = build_embed(SERVER, None)
+    assert embed.url == "https://www.hetzner.com/sb/?freetext=3101875"
+    assert "freetext=3101875" in field_text(embed, "Zum Server")

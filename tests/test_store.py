@@ -60,3 +60,18 @@ def test_baseline_pending_flag(store):
     assert record.baseline_pending is False
     store.set_baseline_pending(record.id, True)
     assert store.get_filter(1, 2, "s").baseline_pending is True
+
+
+def test_delivery_is_stored_and_can_be_changed(store):
+    record = store.save_filter(1, 2, "dm", Criteria(min_ram=64), mention=False, delivery="dm")
+    assert record.delivery == "dm"
+    record = store.save_filter(
+        1, 2, "dm", Criteria(min_ram=64), mention=False, delivery="channel"
+    )
+    assert record.delivery == "channel"
+
+
+def test_dm_price_history_is_per_filter(store):
+    store.record_dm_post(7, 10, Decimal("45"))
+    assert store.last_dm_price(7, 10) == Decimal("45")
+    assert store.last_dm_price(8, 10) is None

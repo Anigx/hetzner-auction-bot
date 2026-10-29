@@ -19,6 +19,9 @@ gesetzt sein**. `mention` ist kein Kriterium, sondern eine Einstellung.
 | `no_setup` | Ja/Nein | Setup-Gebühr `0` |
 | `min_bandwidth` | Mbit/s | `≥` |
 
+Zusätzlich am Filter (kein Kriterium): `mention` (beim Treffer taggen) und
+`delivery` (`kanal` oder `dm` — wohin der Treffer geht).
+
 Gespeichert wird JSON in `filters.criteria_json`; die Struktur ist erweiterbar
 ohne Migration.
 
@@ -42,6 +45,23 @@ Auktion auftaucht — das ist der Erinnerungsmechanismus.
   `min_disk` prüft die **Rohsumme dieses Typs** (`Details.<typ>`).
 - Gemischte Server erfüllen mehrere Typen gleichzeitig.
 - **Kein Aufrunden:** 1966 GB sind 1,92 TB und fallen bei `min_disk: 2` raus.
+
+## Zustellung: Kanal oder DM
+
+`delivery:kanal` (Default) postet in den eingerichteten Kanal; `mention:true` taggt
+dich dabei. `delivery:dm` schickt den Treffer nur dir als Direktnachricht — nichts
+geht in den Kanal. Beide Wege haben ihre eigene Dedupe: Kanäle über
+`posts(guild, server)`, DMs über `dm_posts(filter, server)`. Ein Server kann also
+öffentlich **und** per DM erscheinen, wenn zwei Personen es unterschiedlich wollen.
+
+Scheitert eine DM (weil du DMs vom Server blockierst), wird geloggt und im nächsten
+Lauf erneut versucht.
+
+## Direktlink
+
+Jeder Treffer verlinkt `https://www.hetzner.com/sb/?freetext=<ID>`. Die Auktionsseite
+filtert per URL-Parameter auf genau diesen Server („1 results"), ein Deep-Link auf
+die Bestellseite existiert nicht.
 
 ## Wann gepostet wird
 

@@ -20,11 +20,29 @@ class FakeChannel:
 
 
 class FakeBot:
-    def __init__(self, channel):
+    def __init__(self, channel, user=None):
         self.channel = channel
+        self.user = user
 
     def get_channel(self, cid):
         return self.channel
+
+    def get_user(self, uid):
+        return self.user
+
+    async def fetch_user(self, uid):
+        return self.user
+
+
+class FakeUser:
+    def __init__(self, fail=False):
+        self.fail = fail
+        self.sent = []
+
+    async def send(self, embed=None, content=None):
+        if self.fail:
+            raise RuntimeError("DMs geschlossen")
+        self.sent.append(embed)
 
 
 class FakeConfig:
@@ -141,3 +159,38 @@ async def test_pending_baseline_is_applied_on_next_run(store, make_server):
     assert channel.sent == []
     assert store.get_filter(1, 2, "standard").baseline_pending is False
     assert store.baseline_price(1, 10) == Decimal("45")
+
+
+@pytest.mark.asyncio
+async def test_dm_filter_sends_only_a_direct_message(store, make_server):
+    store.set_channel(1, 99)
+    store.save_filter(1, 2, "dm", Criteria(min_ram=64), mention=False, delivery="dm")
+    channel = FakeChannel()
+    user = FakeUser()
+    poller = Poller(
+        FakeBot(channel, user), store, fetch=lambda: [make_server()], max_posts=15
+    )
+
+    report = await poller.run_once()
+
+    assert report.posted == 0
+    assert report.dms == 1
+    assert channel.sent == []
+    assert len(user.sent) == 1
+    assert store.last_dm_price(store.list_filters(1, 2)[0].id, 10) == Decimal("45")
+
+
+@pytest.mark.asyncio
+async def test_closed_dms_do_not_crash_and_are_retried(store, make_server):
+    store.set_channel(1, 99)
+    store.save_filter(1, 2, "dm", Criteria(min_ram=64), mention=False, delivery="dm")
+    channel = FakeChannel()
+    user = FakeUser(fail=True)
+    poller = Poller(
+        FakeBot(channel, user), store, fetch=lambda: [make_server()], max_posts=15
+    )
+
+    report = await poller.run_once()
+
+    assert report.dms == 0
+    assert store.last_dm_price(store.list_filters(1, 2)[0].id, 10) is None

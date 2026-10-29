@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from hetzner_bot.bot.texts import describe_filter, guild_count_warning
+from hetzner_bot.bot.texts import describe_filter, format_match_line, guild_count_warning, HELP_TEXT
 from hetzner_bot.domain import Criteria, FilterRecord
 
 
@@ -40,3 +40,17 @@ def test_guild_count_warning_names_the_missing_scope():
     text = guild_count_warning(0)
     assert "bot" in text
     assert "applications.commands" in text
+
+
+def test_help_text_lists_the_commands():
+    for command in ("/watch", "/matches", "/filters", "/status", "/setup"):
+        assert command in HELP_TEXT
+    assert "delivery" in HELP_TEXT
+    assert len(HELP_TEXT) <= 2000
+
+
+def test_match_line_contains_direct_link(make_server):
+    line = format_match_line(make_server(id=3101875, price="39"))
+    assert "3101875" in line
+    assert "https://www.hetzner.com/sb/?freetext=3101875" in line
+    assert "39" in line

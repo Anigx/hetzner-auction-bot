@@ -14,6 +14,11 @@ BRAND_COLOR = 0x00A88F
 AUCTION_URL = "https://www.hetzner.com/sb/"
 
 
+def server_url(server_id: int) -> str:
+    """Direktlink auf einen Server: die Auktionsseite filtert per freetext-Parameter."""
+    return f"{AUCTION_URL}?freetext={server_id}"
+
+
 def _disk_summary(server: Server) -> str:
     parts: list[str] = []
     for label, size in (
@@ -43,7 +48,7 @@ def build_embed(server: Server, previous_price: Decimal | None = None) -> discor
     embed = discord.Embed(
         title=f"{server.cpu_name} · {server.storage_total_gb} GB",
         color=BRAND_COLOR,
-        url=AUCTION_URL,
+        url=server_url(server.id),
     )
     embed.add_field(
         name="Kerne", value=str(cores) if cores is not None else "unbekannt", inline=True
@@ -57,6 +62,11 @@ def build_embed(server: Server, previous_price: Decimal | None = None) -> discor
         inline=True,
     )
     embed.add_field(name="Server-ID", value=str(server.id), inline=True)
+    embed.add_field(
+        name="Zum Server",
+        value=f"[In der Serverbörse öffnen]({server_url(server.id)})",
+        inline=True,
+    )
     embed.add_field(name="Preis", value=_price_text(server, previous_price), inline=False)
     embed.set_footer(text=f"Hetzner Serverbörse · ID {server.id}")
     return embed

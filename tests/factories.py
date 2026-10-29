@@ -39,6 +39,7 @@ def build_filter(
     mention: bool = True,
     active: bool = True,
     name: str | None = None,
+    delivery: str = "channel",
     **criteria,
 ) -> FilterRecord:
     return FilterRecord(
@@ -49,4 +50,5 @@ def build_filter(
         criteria=Criteria(**criteria),
         mention=mention,
         active=active,
+        delivery=delivery,
     )

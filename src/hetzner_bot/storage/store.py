@@ -25,13 +25,15 @@ class Store:
 
     def init_schema(self) -> None:
         self._db.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
-        # Migration fuer Datenbanken aus der Zeit vor baseline_pending.
-        try:
-            self._db.execute(
-                "ALTER TABLE filters ADD COLUMN baseline_pending INTEGER NOT NULL DEFAULT 0"
-            )
-        except sqlite3.OperationalError:
-            pass
+        # Migrationen fuer Datenbanken aus frueheren Versionen.
+        for statement in (
+            "ALTER TABLE filters ADD COLUMN baseline_pending INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE filters ADD COLUMN delivery TEXT NOT NULL DEFAULT 'channel'",
+        ):
+            try:
+                self._db.execute(statement)
+            except sqlite3.OperationalError:
+                pass
         self._db.commit()
 
     def close(self) -> None:
@@ -71,6 +73,7 @@ class Store:
             mention=bool(row["mention"]),
             active=bool(row["active"]),
             baseline_pending=bool(row["baseline_pending"]),
+            delivery=str(row["delivery"]),
         )
 
     def save_filter(
@@ -80,17 +83,19 @@ class Store:
         name: str,
         criteria: Criteria,
         mention: bool,
+        delivery: str = "channel",
     ) -> FilterRecord:
         self._db.execute(
             """
-            INSERT INTO filters (guild_id, user_id, name, criteria_json, mention, active)
-            VALUES (?, ?, ?, ?, ?, 1)
+            INSERT INTO filters (guild_id, user_id, name, criteria_json, mention, active, delivery)
+            VALUES (?, ?, ?, ?, ?, 1, ?)
             ON CONFLICT(guild_id, user_id, name) DO UPDATE SET
                 criteria_json = excluded.criteria_json,
                 mention = excluded.mention,
-                active = 1
+                active = 1,
+                delivery = excluded.delivery
             """,
-            (guild_id, user_id, name, json.dumps(criteria.to_json()), int(mention)),
+            (guild_id, user_id, name, json.dumps(criteria.to_json()), int(mention), delivery),
         )
         self._db.commit()
         record = self.get_filter(guild_id, user_id, name)
@@ -193,6 +198,26 @@ class Store:
             (guild_id, server_id),
         ).fetchone()
         return None if row is None else Decimal(row["last_price_eur"])
+
+    def last_dm_price(self, filter_id: int, server_id: int) -> Decimal | None:
+        row = self._db.execute(
+            "SELECT last_price_eur FROM dm_posts WHERE filter_id = ? AND server_id = ?",
+            (filter_id, server_id),
+        ).fetchone()
+        return None if row is None else Decimal(row["last_price_eur"])
+
+    def record_dm_post(self, filter_id: int, server_id: int, price: Decimal) -> None:
+        self._db.execute(
+            """
+            INSERT INTO dm_posts (filter_id, server_id, last_price_eur, posted_at)
+            VALUES (?, ?, ?, datetime('now'))
+            ON CONFLICT(filter_id, server_id) DO UPDATE SET
+                last_price_eur = excluded.last_price_eur,
+                posted_at = excluded.posted_at
+            """,
+            (filter_id, server_id, str(price)),
+        )
+        self._db.commit()
 
     def record_post(self, guild_id: int, server_id: int, price: Decimal) -> None:
         self._db.execute(

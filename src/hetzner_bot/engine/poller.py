@@ -13,7 +13,7 @@ from typing import Any, Callable
 from hetzner_bot.auction import fetch_servers
 from hetzner_bot.delivery import build_embed, mention_prefix
 from hetzner_bot.domain import Candidate, Server
-from hetzner_bot.engine.candidates import find_candidates
+from hetzner_bot.engine.candidates import find_candidates, find_dm_candidates
 from hetzner_bot.engine.matching import matches
 from hetzner_bot.storage import Store
 
@@ -27,6 +27,7 @@ ALERT_AFTER_FAILURES = 3
 class PollReport:
     fetched: int = 0
     posted: int = 0
+    dms: int = 0
     queued: int = 0
     failed: bool = False
 
@@ -108,9 +109,12 @@ class Poller:
             if await self._deliver(candidate):
                 posted += 1
 
+        dms = await self._deliver_dms(servers, filters, max_posts)
+
         return PollReport(
             fetched=len(servers),
             posted=posted,
+            dms=dms,
             queued=len(self.store.queued()),
             failed=False,
         )
@@ -184,6 +188,37 @@ class Poller:
             self.store.mark_seen(filter_id, [server.id])
         self.store.dequeue(guild_id, server.id)
         return True
+
+    async def _deliver_dms(self, servers, filters, limit: int) -> int:
+        """Zustellung an Personen, die ihre Treffer per DM wollen."""
+        candidates = find_dm_candidates(
+            servers, filters, self.store.is_seen, self.store.last_dm_price
+        )
+        sent = 0
+        for candidate in candidates[:limit]:
+            try:
+                user = self.bot.get_user(candidate.user_id)
+                if user is None:
+                    user = await self.bot.fetch_user(candidate.user_id)
+                await user.send(
+                    embed=build_embed(candidate.server, candidate.previous_price)
+                )
+            except Exception as exc:  # noqa: BLE001 - geschlossene DMs duerfen nichts kippen
+                log.warning(
+                    "DM an %s fehlgeschlagen (Filter %s, Server %s): %s",
+                    candidate.user_id,
+                    candidate.filter_id,
+                    candidate.server.id,
+                    exc,
+                )
+                continue
+
+            self.store.record_dm_post(
+                candidate.filter_id, candidate.server.id, candidate.server.price_month_eur
+            )
+            self.store.mark_seen(candidate.filter_id, [candidate.server.id])
+            sent += 1
+        return sent
 
     def _retry_or_give_up(self, candidate: Candidate, reason: str) -> bool:
         """Zaehlt einen Fehlversuch. Nach MAX_ATTEMPTS wird der Treffer verworfen und

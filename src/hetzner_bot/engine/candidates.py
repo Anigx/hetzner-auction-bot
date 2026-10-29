@@ -5,11 +5,22 @@ Reine Funktion, kein I/O — die Nachschlage-Funktionen werden hereingereicht.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Callable, Sequence
 
 from hetzner_bot.domain import Candidate, FilterRecord, Server
 from hetzner_bot.engine.matching import matches
+
+
+@dataclass(frozen=True)
+class DmCandidate:
+    """Ein Server, der per Direktnachricht an eine Person geht."""
+
+    user_id: int
+    filter_id: int
+    server: Server
+    previous_price: Decimal | None
 
 
 def find_candidates(
@@ -30,6 +41,8 @@ def find_candidates(
 
     by_guild: dict[int, list[FilterRecord]] = {}
     for record in filters:
+        if record.delivery == "dm":
+            continue
         by_guild.setdefault(record.guild_id, []).append(record)
 
     candidates: list[Candidate] = []
@@ -70,3 +83,42 @@ def find_candidates(
 
     candidates.sort(key=lambda c: (c.guild_id, c.server.price_month_eur, c.server.id))
     return candidates
+
+
+def find_dm_candidates(
+    servers: Sequence[Server],
+    filters: Sequence[FilterRecord],
+    is_seen: Callable[[int, int], bool],
+    last_dm_price: Callable[[int, int], Decimal | None],
+) -> list[DmCandidate]:
+    """Treffer fuer Filter, die per DM zugestellt werden — Dedupe pro Filter.
+
+    Baseline gilt wie im Kanal: beim Anlegen gesehene Server werden nicht noch
+    einmal geschickt, es sei denn der Preis faellt unter den Baseline-Preis.
+    """
+    out: list[DmCandidate] = []
+    for record in filters:
+        if record.delivery != "dm" or not record.active:
+            continue
+        for server in servers:
+            if not matches(record.criteria, server):
+                continue
+
+            previous = last_dm_price(record.id, server.id)
+            if previous is None:
+                if is_seen(record.id, server.id):
+                    continue
+            elif server.price_month_eur >= previous:
+                continue
+
+            out.append(
+                DmCandidate(
+                    user_id=record.user_id,
+                    filter_id=record.id,
+                    server=server,
+                    previous_price=previous,
+                )
+            )
+
+    out.sort(key=lambda c: (c.user_id, c.server.price_month_eur, c.server.id))
+    return out

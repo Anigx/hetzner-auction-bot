@@ -7,6 +7,10 @@ Alle nennenswerten Änderungen an diesem Projekt. Format nach
 ## [Unreleased]
 
 ### Hinzugefügt
+- 2026-10-29 (v0.3.0): Direktlink pro Server
+  (`hetzner.com/sb/?freetext=<ID>`) in Embeds und `/matches`; `/help` erklärt
+  Befehle und Filter; `/matches` zeigt die aktuell passenden Server; Zustellung
+  per DM über `delivery:dm`.
 - 2026-10-29: CI-Workflow (Tests bei Push und PR) und Release-Workflow: ein Tag
   `v*` baut das Container-Image nach `ghcr.io/anigx/hetzner-auction-bot` und legt
   das Release mit den Notes aus `docs/releases/notes.md` an. `v0.1.0` ist

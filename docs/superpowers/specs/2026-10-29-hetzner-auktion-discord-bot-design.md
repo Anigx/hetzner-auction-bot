@@ -90,7 +90,8 @@ eines muss gesetzt sein.
 | `ecc` | Auswahl | `ja`, `egal` |
 | `no_setup` | Ja/Nein | nur ohne Setup-Gebühr |
 | `min_bandwidth` | Zahl (Mbit/s) | Anbindung ≥ X |
-| `mention` | Ja/Nein | bei Treffer taggen |
+| `mention` | Ja/Nein | bei Treffer taggen (nur Kanal-Zustellung) |
+| `delivery` | `kanal` (Default) / `dm` | wohin der Treffer geht |
 
 Filter werden als JSON in SQLite gespeichert; die Kriterien bleiben erweiterbar,
 ohne Migration. `mention` ist **kein** Kriterium, sondern eine Einstellung am
@@ -180,14 +181,16 @@ zuletzt gepostete Preis pro Server-ID.
   Anbindung, Traffic, Preis monatlich, Preis stündlich, Setup, Server-ID
 - Bei Preisfall: „vorher 45 € → jetzt 39 €"
 - Fußzeile: „Hetzner Serverbörse · ID 3101875"
-- Link: Auktionsseite (`https://www.hetzner.com/sb/`). Optional zusätzlich
-  `?freetext=<ID>`, falls die Seite das vorfiltert — beim Bauen prüfen.
+- Link: `https://www.hetzner.com/sb/?freetext=<ID>` — die Auktionsseite filtert
+  per URL-Parameter auf genau diesen Server (im Browser geprüft: „1 results").
 
 ## Slash-Commands
 
 | Command | Wer | Zweck |
 |---|---|---|
 | `/setup channel:<#kanal>` | Manage Server | Kanal festlegen, in dem gepostet wird |
+| `/help` | alle | Befehle, Filter und Zustellarten erklären |
+| `/matches` | alle | was gerade zu den eigenen Filtern passt, mit Direktlink |
 | `/watch ...` | alle | Filter anlegen/überschreiben (Optionen = Filterfelder + `name`) |
 | `/filters` | alle | eigene Filter auflisten, mit Trefferzahl von jetzt |
 | `/unwatch name:<name>` | alle | Filter löschen |
@@ -299,8 +302,9 @@ auf dem eigenen VPS.
 
 ## Offen / beim Bauen zu klären
 
-- Filtert `https://www.hetzner.com/sb/?freetext=<ID>` tatsächlich vor? Wenn
-  nicht, bleibt der generische Link.
+- Filtert `https://www.hetzner.com/sb/?freetext=<ID>` tatsächlich vor? **Ja,
+  geprüft im Browser: die Seite zeigt damit genau einen Treffer.** Der Bot nutzt
+  diesen Link in Embeds und `/matches`.
 - Ob `Timer.ReduceNextTimestamp` im Embed als „nächster Preisfall ca. 14:20"
   angezeigt wird — nice-to-have, keine Pflicht.
 - Die CPU-Tabelle muss bei neuen Auktionsmodellen nachgezogen werden. Ein

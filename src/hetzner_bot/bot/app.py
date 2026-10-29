@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 
 from hetzner_bot.auction import fetch_servers
 from hetzner_bot.bot.cogs import ALL_COGS
+from hetzner_bot.bot.texts import guild_count_warning
 from hetzner_bot.config import Config, load_config
 from hetzner_bot.domain import Server
 from hetzner_bot.engine import Poller
@@ -65,9 +66,10 @@ class HetznerBot(commands.Bot):
         assert self.poller is not None
         report = await self.poller.run_once()
         log.info(
-            "Poll: %s Server, %s gepostet, %s wartend, fehlgeschlagen=%s",
+            "Poll: %s Server, %s gepostet, %s DMs, %s wartend, fehlgeschlagen=%s",
             report.fetched,
             report.posted,
+            report.dms,
             report.queued,
             report.failed,
         )

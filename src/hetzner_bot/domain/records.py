@@ -21,6 +21,10 @@ class FilterRecord:
     mention: bool
     active: bool = True
     baseline_pending: bool = False
+    delivery: str = "channel"
+
+
+DELIVERY_KINDS = ("channel", "dm")
 
 
 @dataclass(frozen=True)

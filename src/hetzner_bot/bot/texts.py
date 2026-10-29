@@ -5,7 +5,8 @@ from __future__ import annotations
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from hetzner_bot.domain import Criteria, FilterRecord
+from hetzner_bot.delivery import server_url
+from hetzner_bot.domain import Criteria, FilterRecord, Server
 
 BERLIN = ZoneInfo("Europe/Berlin")
 
@@ -55,6 +56,42 @@ def channel_warning(channel_id: int | None) -> str | None:
     if channel_id is None:
         return "Noch kein Kanal eingerichtet — ein Admin muss `/setup` ausführen."
     return None
+
+
+def format_match_line(server: Server) -> str:
+    """Eine Zeile für /matches — mit Direktlink auf den Server."""
+    return (
+        f"**{server.cpu_name}** · {server.ram_gb} GB RAM · "
+        f"{server.storage_total_gb} GB Platten · {server.price_month_eur} €/Monat — "
+        f"[ID {server.id}]({server_url(server.id)})"
+    )
+
+
+HELP_TEXT = """**Hetzner Auction Bot**
+
+Ich beobachte die Hetzner-Serverbörse alle 10 Minuten und melde nur Server, die \
+zu deinen Filtern passen.
+
+**Befehle**
+`/watch` — Filter anlegen oder überschreiben
+`/matches` — was gerade zu deinen Filtern passt, mit Direktlink
+`/filters` — deine Filter ansehen
+`/pause` · `/resume` — Filter pausieren oder wieder anschalten
+`/unwatch` — Filter löschen
+`/status` — Zustand des Bots
+`/setup` — Zielkanal festlegen (nur Server-Verwaltung)
+
+**Filter** (mindestens eins nötig)
+`max_price` €/Monat · `min_ram` GB · `min_cores` Kerne · `cpu` Text im CPU-Namen ·
+`min_disk` TB · `disk_type` nvme/sata/hdd · `location` FSN/NBG/HEL · `ecc` ·
+`no_setup` · `min_bandwidth` Mbit/s
+
+**Zustellung**
+`delivery:kanal` (Standard) — Treffer gehen in den Kanal, mit `mention:true` wirst du getaggt.
+`delivery:dm` — Treffer kommen nur dir als Direktnachricht, nichts geht in den Kanal.
+
+**Beim Anlegen** bekommst du nur eine Zahl: was jetzt schon passt, wird nicht \
+gepostet. Danach melde ich neue Server und Preisfälle."""
 
 
 def guild_count_warning(guild_count: int) -> str | None:

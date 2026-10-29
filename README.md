@@ -56,14 +56,24 @@ Besitzer und Rechte aus dem Image.
 
 ```
 /setup channel:#server-deals     # einmalig, braucht "Server verwalten"
+/help                            # Befehle, Filter und Zustellung erklaert
 /watch max_price:100 min_ram:64 min_cores:8 mention:true
 /watch name:ryzen cpu:"Ryzen 9" min_disk:2 disk_type:nvme mention:true
+/watch name:privat max_price:120 delivery:dm
+/matches                         # was gerade passt, mit Direktlink
 /filters
 /pause name:standard
 /resume name:standard
 /unwatch name:standard
 /status
 ```
+
+Jeder Treffer verlinkt direkt auf den Server
+(`hetzner.com/sb/?freetext=<ID>`), der Titel des Embeds ist klickbar.
+
+Mit `delivery:dm` kommen die Treffer nur dir als Direktnachricht, nichts geht in
+den Kanal. `delivery:kanal` (Standard) postet öffentlich, `mention:true` taggt dich
+dabei.
 
 Beim Anlegen eines Filters werden die aktuell passenden Server nur gezählt, nicht
 gepostet — sonst würde der Kanal mit Altbestand geflutet.

@@ -1,3 +1,7 @@
+import logging
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
+
 import discord
 import pytest
 
@@ -57,6 +61,8 @@ async def test_all_commands_are_registered(tmp_path):
         "pause",
         "resume",
         "status",
+        "help",
+        "matches",
     } <= names
 
     setup = bot.tree.get_command("setup")
@@ -64,4 +70,21 @@ async def test_all_commands_are_registered(tmp_path):
     assert "channel" in params
     assert params["channel"].required is False
 
+    await bot.close()
+
+
+@pytest.mark.asyncio
+async def test_on_ready_warns_when_bot_is_in_no_guild(tmp_path, caplog):
+    """Der Startpfad lief im Container durch, erst on_ready warf einen NameError."""
+    bot = HetznerBot(build_config(tmp_path))
+    await bot._async_setup_hook()
+    await bot.setup_hook()
+
+    bot.tree.sync = AsyncMock()
+    bot.poll_loop = SimpleNamespace(is_running=lambda: True, cancel=lambda: None)
+
+    with caplog.at_level(logging.WARNING):
+        await bot.on_ready()
+
+    assert any("keinem Server" in record.message for record in caplog.records)
     await bot.close()

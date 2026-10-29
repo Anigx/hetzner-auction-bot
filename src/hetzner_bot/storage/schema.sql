@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS filters (
     mention       INTEGER NOT NULL DEFAULT 0,
     active        INTEGER NOT NULL DEFAULT 1,
     baseline_pending INTEGER NOT NULL DEFAULT 0,
+    delivery      TEXT NOT NULL DEFAULT 'channel',
     created_at    TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE (guild_id, user_id, name)
 );
@@ -37,6 +38,14 @@ CREATE TABLE IF NOT EXISTS baselines (
     price_eur   TEXT NOT NULL,
     recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (guild_id, server_id)
+);
+
+CREATE TABLE IF NOT EXISTS dm_posts (
+    filter_id      INTEGER NOT NULL,
+    server_id      INTEGER NOT NULL,
+    last_price_eur TEXT NOT NULL,
+    posted_at      TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (filter_id, server_id)
 );
 
 CREATE TABLE IF NOT EXISTS queue (

@@ -20,6 +20,7 @@ log = logging.getLogger(__name__)
 DiskType = Literal["egal", "nvme", "sata", "hdd"]
 Location = Literal["egal", "FSN", "NBG", "HEL"]
 Ecc = Literal["egal", "ja"]
+Delivery = Literal["kanal", "dm"]
 
 
 def _decimal_or_none(value: float | int | None) -> Decimal | None:
@@ -92,6 +93,7 @@ class WatchCog(commands.Cog):
         no_setup="Nur Server ohne Setup-Gebuehr",
         min_bandwidth="Mindest-Anbindung in Mbit/s",
         mention="Bei Treffern taggen",
+        delivery="kanal = in den Kanal, dm = nur per Direktnachricht an dich",
     )
     async def watch(
         self,
@@ -108,6 +110,7 @@ class WatchCog(commands.Cog):
         no_setup: bool | None = None,
         min_bandwidth: int | None = None,
         mention: bool = False,
+        delivery: Delivery = "kanal",
     ) -> None:
         await interaction.response.defer(ephemeral=True)
 
@@ -142,7 +145,12 @@ class WatchCog(commands.Cog):
             return
 
         record = self.bot.store.save_filter(
-            guild_id, interaction.user.id, clean_name, criteria, mention
+            guild_id,
+            interaction.user.id,
+            clean_name,
+            criteria,
+            mention,
+            delivery="dm" if delivery == "dm" else "channel",
         )
 
         try:
@@ -159,12 +167,16 @@ class WatchCog(commands.Cog):
             return
 
         count = snap_to_current(self.bot.store, record, servers)
-        ping = "mit Ping" if mention else "ohne Ping"
+        if record.delivery == "dm":
+            zustellung = "Zustellung per DM"
+        else:
+            zustellung = "Ping an" if mention else "ohne Ping"
         text = (
-            f"Filter '{record.name}' gespeichert ({ping}). "
-            f"Aktuell passen {count} Server — ab jetzt melde ich neue."
+            f"Filter '{record.name}' gespeichert ({zustellung}). "
+            f"Aktuell passen {count} Server — ab jetzt melde ich neue. "
+            "`/matches` zeigt sie dir sofort."
         )
         warning = channel_warning(self.bot.store.get_channel(guild_id))
-        if warning:
+        if warning and record.delivery != "dm":
             text += f"\n{warning}"
         await interaction.followup.send(text, ephemeral=True)
