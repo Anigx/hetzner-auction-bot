@@ -12,8 +12,10 @@ werden will.
 
 ## Stand
 
-Planung abgeschlossen, Design geschrieben, noch kein Code.
-Siehe [Design](docs/superpowers/specs/2026-10-29-hetzner-auktion-discord-bot-design.md)
+Umgesetzt und getestet (74 Tests). Läuft lokal, Deployment auf einem VPS per
+Docker Compose steht noch aus.
+Siehe [Design](docs/superpowers/specs/2026-10-29-hetzner-auktion-discord-bot-design.md),
+[Plan](docs/superpowers/plans/2026-10-29-hetzner-auktion-discord-bot.md)
 und [TASKS.md](TASKS.md).
 
 ## Wiki

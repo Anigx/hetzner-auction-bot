@@ -1,0 +1,13 @@
+services:
+  bot:
+    build: .
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "healthcheck.py"]
+      interval: 5m
+      timeout: 10s
+      retries: 2
+      start_period: 2m

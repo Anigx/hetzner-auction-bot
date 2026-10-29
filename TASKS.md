@@ -1,72 +1,75 @@
 # TASKS
 
-Arbeitsliste. Oben steht, was als Nächstes dran ist. Abgehakte Aufgaben bleiben
-stehen, bis die Phase abgeschlossen ist.
+Arbeitsliste. Oben steht, was als Nächstes dran ist.
 
-Status: **Planung abgeschlossen, Freigabe des Designs offen.**
+Status: **Code fertig, 74 Tests grün. Deployment auf dem VPS offen.**
 
-## Blockiert durch
+## Als Nächstes
 
-- [x] Freigabe des Design-Dokuments durch den Projektinhaber (2026-10-29)
+- [ ] `docker compose up -d --build` auf dem VPS, `data/` vorher anlegen und chownen
+- [ ] Bot einladen, `/setup` und `/watch` im echten Kanal testen
+- [ ] Nach 24 Stunden prüfen: Healthcheck, Logs, keine Doppel-Posts
 
 ## Phase 0 — Gerüst
 
-- [ ] Git-Repository initialisieren, `.gitignore` (`.env`, `data/`, `.venv`, `__pycache__`)
-- [ ] `requirements.txt` mit festen Versionen (`discord.py`, `httpx`, `pytest`, `python-dotenv`)
-- [ ] `config.py`: Env laden, fehlenden Token klar melden
-- [ ] Projektstruktur anlegen (`hetzner/`, `tests/`)
+- [x] Git-Repository initialisieren, `.gitignore`
+- [x] `requirements.txt` mit festen Versionen
+- [x] `config.py`: Env laden, fehlenden Token klar melden
+- [x] Projektstruktur anlegen (`hetzner/`, `tests/`)
 
 ## Phase 1 — Datenquelle
 
-- [ ] Fixture-Snapshot der echten `live_data_sb.json` in `tests/fixtures/` ablegen
-- [ ] `hetzner/models.py`: Dataclasses für Server, Hardware, Preise
-- [ ] `hetzner/client.py`: Fetch mit Timeout, 3 Versuche, Backoff
-- [ ] Parser-Tests gegen Fixture, inkl. fehlender Felder
-- [ ] Prüfen: filtert `?freetext=<ID>` die Auktionsseite vor?
+- [x] Fixture-Snapshot der echten `live_data_sb.json` in `tests/fixtures/`
+- [x] `hetzner/models.py`: Dataclasses für Server, Hardware, Preise
+- [x] `hetzner/client.py`: Fetch mit Timeout, 3 Versuche, Backoff
+- [x] Parser-Tests gegen Fixture, inkl. fehlender Felder
+- [x] `?freetext=<ID>` geprüft: filtert nicht vor, Embed nutzt den generischen Link
 
 ## Phase 2 — Filter und Matching
 
-- [ ] Kriterien-Dataclass mit Validierung (mindestens ein Kriterium, Preis > 0, `mention` zählt nicht)
-- [ ] `matches()` pro Kriterium und in Kombination, mit Unit-Tests
-- [ ] CPU-Tabelle (24 Auktionsmodelle → Kerne) inkl. Wächter-Test auf unbekannte CPUs
-- [ ] Platten-Typ-Logik (nvme/sata/hdd aus `Details.Storage.Details`, Semantik siehe Design)
-- [ ] Standort-Mapping (FSN/NBG/HEL aus `Datacenter.Name`)
+- [x] Kriterien-Dataclass mit Validierung
+- [x] `matches()` pro Kriterium und in Kombination, mit Unit-Tests
+- [x] CPU-Tabelle (24 Auktionsmodelle → Kerne) inkl. Wächter-Test
+- [x] Platten-Typ-Logik nach der Semantik aus dem Design
+- [x] Standort-Mapping (FSN/NBG/HEL aus `Datacenter.Name`)
 
 ## Phase 3 — Speicher
 
-- [ ] `store.py`: SQLite-Schema `guilds`, `filters`, `seen`, `posts`, `queue` anlegen
-- [ ] CRUD für Filter (anlegen, überschreiben, löschen, pausieren)
-- [ ] Dedupe-Abfragen pro Guild: unbekannt / Preis gefallen / unverändert
-- [ ] Baseline beim Filter-Anlegen in `seen` schreiben, ohne `posts` anzufassen
-- [ ] Warteschlange für Treffer über der 15er-Grenze und für Fehlversuche
-- [ ] Tests gegen temporäre DB
+- [x] SQLite-Schema `guilds`, `filters`, `seen`, `posts`, `baselines`, `queue`
+- [x] CRUD für Filter (anlegen, überschreiben, löschen, pausieren)
+- [x] Dedupe-Abfragen pro Guild
+- [x] Baseline beim Filter-Anlegen in `seen` + `baselines`, ohne `posts` anzufassen
+- [x] Warteschlange für Treffer über der 15er-Grenze und für Fehlversuche
+- [x] Tests gegen temporäre DB
 
 ## Phase 4 — Discord
 
-- [ ] Bot-Grundgerüst, Intents (nur `guilds`), Command-Sync
-- [ ] `/setup` mit Rechteprüfung
-- [ ] `/watch` mit allen Filteroptionen, ephemeres Feedback
-- [ ] Erstlauf-Verhalten: bestehende Treffer als gesehen markieren, nicht posten
-- [ ] `/filters`, `/unwatch`, `/pause`, `/resume`, `/status`
-- [ ] Poll-Loop alle 10 Minuten, max. 15 Posts pro Lauf
-- [ ] Ausfall-Meldung im Kanal nach 3 fehlgeschlagenen Polls, Entwarnung danach
-- [ ] Embed-Bau inkl. Preisfall-Darstellung
-- [ ] Ping-Logik: Vereinigung aller passenden Filter mit `mention`
+- [x] Bot-Grundgerüst, Command-Sync
+- [x] `/setup` mit Rechteprüfung
+- [x] `/watch` mit allen Filteroptionen, ephemeres Feedback
+- [x] Erstlauf-Verhalten: bestehende Treffer als gesehen markieren, nicht posten
+- [x] `/filters`, `/unwatch`, `/pause`, `/resume`, `/status`
+- [x] Poll-Loop alle 10 Minuten, max. 15 Posts pro Lauf
+- [x] Ausfall-Meldung im Kanal nach 3 fehlgeschlagenen Polls, Entwarnung danach
+- [x] Embed-Bau inkl. Preisfall-Darstellung
+- [x] Ping-Logik: Vereinigung aller passenden Filter mit `mention`
 
 ## Phase 5 — Betrieb
 
-- [ ] `Dockerfile` (non-root, python:3.12-slim)
-- [ ] `docker-compose.yml` mit Volume, `restart: unless-stopped`, `.env`
-- [ ] Healthcheck-Signal (letzter erfolgreicher Poll)
-- [ ] Logging als JSON-Zeilen nach stdout
-- [ ] `README.md` mit Setup-Anleitung für den VPS
+- [x] `Dockerfile` (non-root, python:3.12-slim)
+- [x] `docker-compose.yml` mit Volume, `restart: unless-stopped`, `.env`
+- [x] Healthcheck über `data/last_poll`
+- [x] Logging nach stdout
+- [x] `README.md` mit Setup-Anleitung
 - [ ] Trockenlauf auf einem Testserver mit echtem Token
+- [ ] `docker compose build` auf dem VPS verifizieren (lokal kein Docker)
 
 ## Offene Punkte
 
-- [ ] Entscheiden, ob `Timer.ReduceNextTimestamp` im Embed erscheint
-- [ ] Grenze für Filter pro Person festlegen (Vorschlag: 5)
-- [ ] Verhalten bei gelöschtem Kanal festlegen (Vorschlag: WARN + `/setup` verlangen)
+- [ ] Grenze für Filter pro Person festlegen (Vorschlag: 5) — aktuell unbegrenzt
+- [ ] Entscheiden, ob `Timer.ReduceNextTimestamp` zusätzlich im Embed erscheint
+- [ ] Log-Ausgabe als echtes JSON (aktuell handgebaut, bricht bei Anführungszeichen)
+- [ ] `seen`/`posts` irgendwann aufräumen (bei ~100 Servern jahrelang unkritisch)
 
 ## Ideen für später
 
