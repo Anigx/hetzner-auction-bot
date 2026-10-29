@@ -61,6 +61,7 @@ docker compose pull && docker compose up -d
 | `DATABASE_PATH` | `data/bot.sqlite3` | Pfad in der DB (im Volume) |
 | `POLL_MINUTES` | `10` | Prüfintervall |
 | `MAX_POSTS_PER_RUN` | `15` | Obergrenze pro Lauf |
+| `MAX_FILTERS_PER_USER` | `5` | Filter pro Person und Server |
 | `LOG_LEVEL` | `INFO` | Log-Schwelle |
 | `AUCTION_URL` | Hetzner-URL | andere Datenquelle (Tests, Umzug) |
 | `LAST_POLL_FILE` | `data/last_poll` | Heartbeat für den Healthcheck |
@@ -103,8 +104,9 @@ docker compose down -v
 
 ## Logs
 
-Zeilenweise nach stdout, mit Zeit, Level und Logger. Absichtlich schlicht — siehe
-offener Punkt in [TASKS.md](../TASKS.md): echtes JSON bei Anführungszeichen im Text.
+Eine JSON-Zeile pro Ereignis mit `time` (UTC), `level`, `logger`, `msg` und bei
+Fehlern `exception`. Gebaut mit `json.dumps`, deshalb brechen auch
+Anführungszeichen oder Zeilenumbrüche im Text die Zeile nicht.
 
 ---
 

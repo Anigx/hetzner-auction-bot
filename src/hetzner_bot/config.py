@@ -22,6 +22,7 @@ class Config:
     auction_url: str
     poll_minutes: int
     max_posts_per_run: int
+    max_filters_per_user: int
     log_level: str
 
 
@@ -55,5 +56,6 @@ def load_config(env: Mapping[str, str] | None = None) -> Config:
         auction_url=auction_url,
         poll_minutes=_positive_int(values, "POLL_MINUTES", 10),
         max_posts_per_run=_positive_int(values, "MAX_POSTS_PER_RUN", 15),
+        max_filters_per_user=_positive_int(values, "MAX_FILTERS_PER_USER", 5),
         log_level=log_level,
     )

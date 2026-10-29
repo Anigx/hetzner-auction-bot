@@ -65,6 +65,15 @@ def snap_to_current(store, record: FilterRecord, servers: Sequence[Server]) -> i
     return len(matching)
 
 
+def filter_quota_exceeded(store, guild_id: int, user_id: int, name: str, limit: int) -> bool:
+    """Neue Filter sind begrenzt; ein vorhandener Name darf immer ersetzt werden."""
+    if limit is None or limit <= 0:
+        return False
+    if store.get_filter(guild_id, user_id, name) is not None:
+        return False
+    return len(store.list_filters(guild_id, user_id)) >= limit
+
+
 class WatchCog(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
@@ -120,8 +129,20 @@ class WatchCog(commands.Cog):
             await interaction.followup.send(str(exc), ephemeral=True)
             return
 
+        clean_name = name.strip() or "standard"
+        limit = self.bot.config.max_filters_per_user
+        if filter_quota_exceeded(
+            self.bot.store, guild_id, interaction.user.id, clean_name, limit
+        ):
+            await interaction.followup.send(
+                f"Du hast schon {limit} Filter. Loesche einen mit `/unwatch` "
+                "oder ueberschreibe einen vorhandenen Namen.",
+                ephemeral=True,
+            )
+            return
+
         record = self.bot.store.save_filter(
-            guild_id, interaction.user.id, name.strip() or "standard", criteria, mention
+            guild_id, interaction.user.id, clean_name, criteria, mention
         )
 
         try:

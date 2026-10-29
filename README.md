@@ -66,7 +66,9 @@ Alle Optionen von `/watch`: `max_price` (€/Monat), `min_ram` (GB), `min_cores`
 `location` (`FSN`/`NBG`/`HEL`), `ecc`, `no_setup`, `min_bandwidth` (Mbit/s),
 `mention`.
 
-Mindestens ein Kriterium muss gesetzt sein.
+Mindestens ein Kriterium muss gesetzt sein. Pro Person sind maximal 5 Filter
+gleichzeitig aktiv (`MAX_FILTERS_PER_USER`); ein vorhandener Name lässt sich
+jederzeit überschreiben.
 
 ## Betrieb
 
@@ -97,7 +99,8 @@ im Kanal, wenn er dreimal hintereinander keine Daten bekommt.
 
 Optionale Umgebungsvariablen: `AUCTION_URL` (andere Datenquelle),
 `LAST_POLL_FILE` und `MAX_POLL_AGE_MINUTES` (Healthcheck), `POLL_MINUTES`,
-`MAX_POSTS_PER_RUN`, `LOG_LEVEL`.
+`MAX_POSTS_PER_RUN`, `MAX_FILTERS_PER_USER` (Default 5), `LOG_LEVEL`.
+Die Logs sind JSON-Zeilen, eine pro Ereignis.
 
 ## Entwicklung
 

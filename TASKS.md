@@ -66,10 +66,8 @@ Status: **Code fertig, 74 Tests grün. Deployment auf dem VPS offen.**
 
 ## Offene Punkte
 
-- [ ] Grenze für Filter pro Person festlegen (Vorschlag: 5) — aktuell unbegrenzt
-- [ ] Entscheiden, ob `Timer.ReduceNextTimestamp` zusätzlich im Embed erscheint
-- [ ] Log-Ausgabe als echtes JSON (aktuell handgebaut, bricht bei Anführungszeichen)
 - [ ] `seen`/`posts` irgendwann aufräumen (bei ~100 Servern jahrelang unkritisch)
+- [ ] Entscheiden, ob `Timer.ReduceNextTimestamp` zusätzlich im Embed erscheint
 
 ## Ideen für später
 

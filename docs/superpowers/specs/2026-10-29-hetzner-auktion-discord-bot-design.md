@@ -283,6 +283,8 @@ auf dem eigenen VPS.
 - `/watch` mit vorhandenem Namen ersetzt den Filter komplett.
 - Max. 15 Posts pro Lauf, Rest in `queue` nachholen.
 - Ein Filter-Name pro Person, Default `standard`, überschreibbar.
+- Höchstens 5 Filter pro Person (`MAX_FILTERS_PER_USER`), nur für neue Namen.
+- Logs als echte JSON-Zeilen über `json.dumps`.
 - Deutsch als einzige Sprache.
 - Ping auch beim Preisfall, wenn `mention` aktiv ist.
 - `mention` ist kein Kriterium und zählt nicht als „mindestens eines gesetzt".

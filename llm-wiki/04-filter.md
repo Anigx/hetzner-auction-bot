@@ -88,6 +88,8 @@ sehen.
 
 ## Grenzen
 
+- Höchstens 5 Filter pro Person (`MAX_FILTERS_PER_USER`). Ein vorhandener Name
+  darf immer überschrieben werden; die Grenze gilt nur für neue Namen.
 - Kein Filter auf Traffic-Volumen (nur `unlimited` vorhanden).
 - Keine Zusatz-IP-Anzahl im Filter (wird geparst, nicht angeboten).
 - Keine Preishistorie — nur der letzte gepostete Preis.

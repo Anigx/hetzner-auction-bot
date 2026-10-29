@@ -38,6 +38,10 @@ Alle nennenswerten Änderungen an diesem Projekt. Format nach
 - 2026-10-29 (Review): Kaputter `ReduceNextTimestamp` bricht den Lauf nicht mehr ab.
 
 ### Geändert
+- 2026-10-29: Logs sind echte JSON-Zeilen über `json.dumps` — Anführungszeichen und
+  Umbrüche im Text zerlegen die Zeile nicht mehr.
+- 2026-10-29: Höchstens `MAX_FILTERS_PER_USER` (Default 5) Filter pro Person;
+  vorhandene Namen bleiben überschreibbar.
 - 2026-10-29: Python-Code nach `src/hetzner_bot/` umgezogen: ein Paket statt loser
   Module, Domänenobjekte in `domain/`, reines Matching getrennt vom Poll-Lauf,
   Commands in eigene Cogs, Schema als `schema.sql`, gemeinsame Testfabriken in

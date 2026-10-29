@@ -14,6 +14,7 @@ from hetzner_bot.bot.cogs import ALL_COGS
 from hetzner_bot.config import Config, load_config
 from hetzner_bot.domain import Server
 from hetzner_bot.engine import Poller
+from hetzner_bot.logging_setup import configure_logging
 from hetzner_bot.storage import Store
 
 log = logging.getLogger("hetzner_bot")
@@ -77,11 +78,5 @@ class HetznerBot(commands.Bot):
 def main() -> None:
     load_dotenv()
     config = load_config()
-    logging.basicConfig(
-        level=config.log_level,
-        format=(
-            '{"time":"%(asctime)s","level":"%(levelname)s",'
-            '"logger":"%(name)s","msg":"%(message)s"}'
-        ),
-    )
+    configure_logging(config.log_level)
     HetznerBot(config).run(config.discord_token)

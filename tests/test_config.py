@@ -21,3 +21,9 @@ def test_load_config_requires_token():
 def test_load_config_rejects_non_positive_interval():
     with pytest.raises(ConfigError):
         load_config({"DISCORD_TOKEN": "abc", "POLL_MINUTES": "0"})
+
+
+def test_filter_limit_has_default_and_can_be_changed():
+    assert load_config({"DISCORD_TOKEN": "abc"}).max_filters_per_user == 5
+    cfg = load_config({"DISCORD_TOKEN": "abc", "MAX_FILTERS_PER_USER": "3"})
+    assert cfg.max_filters_per_user == 3

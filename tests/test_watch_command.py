@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from hetzner_bot.bot.cogs.watch import build_criteria, snap_to_current
+from hetzner_bot.bot.cogs.watch import build_criteria, filter_quota_exceeded, snap_to_current
 from hetzner_bot.bot.texts import channel_warning
 from hetzner_bot.domain import Criteria, CriteriaError
 
@@ -69,3 +69,17 @@ def test_snap_marks_all_current_matches(store, make_server):
 def test_channel_warning():
     assert channel_warning(123) is None
     assert "/setup" in channel_warning(None)
+
+
+def test_quota_blocks_new_filter_but_allows_replacing(store):
+    store.save_filter(1, 2, "a", Criteria(min_ram=64), mention=False)
+    store.save_filter(1, 2, "b", Criteria(min_ram=64), mention=False)
+
+    assert filter_quota_exceeded(store, 1, 2, "c", 2) is True
+    assert filter_quota_exceeded(store, 1, 2, "a", 2) is False
+    assert filter_quota_exceeded(store, 1, 2, "c", 99) is False
+
+
+def test_quota_counts_only_own_filters(store):
+    store.save_filter(1, 3, "fremd", Criteria(min_ram=64), mention=False)
+    assert filter_quota_exceeded(store, 1, 2, "neu", 1) is False
