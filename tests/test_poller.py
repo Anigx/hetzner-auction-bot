@@ -104,3 +104,22 @@ async def test_vanished_queued_server_is_dropped(store):
     report = await poller.run_once()
     assert report.posted == 0
     assert store.queued() == []
+
+
+class FakeConfig:
+    def __init__(self, tmp_path):
+        self.database_path = tmp_path / "data" / "bot.sqlite3"
+        self.max_posts_per_run = 15
+        self.poll_minutes = 10
+        self.auction_url = "https://example.invalid"
+
+
+@pytest.mark.asyncio
+async def test_successful_run_writes_heartbeat(store, tmp_path):
+    store.set_channel(1, 99)
+    store.save_filter(1, 2, "standard", Criteria(min_ram=64), mention=False)
+    poller = Poller(
+        FakeBot(FakeChannel()), store, config=FakeConfig(tmp_path), fetch=lambda: [make_server()]
+    )
+    await poller.run_once()
+    assert (tmp_path / "data" / "last_poll").exists()

@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import inspect
 import logging
+import os
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
+from pathlib import Path
 from typing import Any, Callable, Sequence
 
 from filters import FilterRecord, matches
@@ -106,6 +108,19 @@ class Poller:
         self.consecutive_failures = 0
         self._alerted = False
 
+    def _write_heartbeat(self) -> None:
+        """Schreibt den Zeitpunkt des letzten erfolgreichen Polls fuer den Healthcheck."""
+        if self.config is None:
+            return
+        try:
+            path = Path(self.config.database_path).parent / "last_poll"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_name("last_poll.tmp")
+            tmp.write_text(datetime.now(UTC).isoformat(), encoding="utf-8")
+            os.replace(tmp, path)
+        except OSError as exc:
+            log.warning("Heartbeat konnte nicht geschrieben werden: %s", exc)
+
     async def _load(self) -> list[Server]:
         if self._fetch is None:
             return await fetch_servers(self.bot.http, self.config.auction_url)
@@ -144,6 +159,7 @@ class Poller:
         self.bot.last_servers = servers
         self.bot.last_poll_at = datetime.now(UTC)
         self.bot.last_error = None
+        self._write_heartbeat()
         if self._alerted:
             self._alerted = False
             await self._notify_all_guilds("Ich bin wieder online und beobachte die Serverbörse.")
