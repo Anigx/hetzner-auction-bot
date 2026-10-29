@@ -1,3 +1,5 @@
+![Hetzner Auction Bot](docs/assets/banner.png)
+
 # Hetzner-Auktions-Bot für Discord
 
 Beobachtet die [Hetzner-Serverbörse](https://www.hetzner.com/sb/) und postet neue
@@ -92,6 +94,13 @@ Tests sprechen nie mit dem Netz: Sie nutzen den Snapshot in
 Die Kernzahlen der CPUs stehen in `hetzner/cpus.py`. Kommt in der Auktion ein neues
 Modell dazu, schlägt `test_every_cpu_in_fixture_is_known` fehl — dann Tabelle
 ergänzen und den Snapshot neu ziehen.
+
+Das Banner entsteht aus `tools/make_banner.py` (braucht `pillow`, nur zum Bauen):
+
+```bash
+uv pip install pillow --python .venv/Scripts/python.exe
+.venv/Scripts/python.exe tools/make_banner.py
+```
 
 ## Dokumentation
 
