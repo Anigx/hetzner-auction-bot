@@ -21,6 +21,10 @@ Alle nennenswerten Änderungen an diesem Projekt. Format nach
   (`docs/superpowers/specs/2026-10-29-hetzner-auktion-discord-bot-design.md`).
 
 ### Behoben
+- 2026-10-29 (v0.2.2): Startabbruch im Container mit
+  `AttributeError: 'NoneType' object has no attribute 'loop'`. Ursache: `HetznerBot`
+  überschrieb `self.http`, das in `discord.py` der interne HTTP-Client ist. Der
+  eigene Client heißt jetzt `auction_http`; ein Test führt den echten Startpfad aus.
 - 2026-10-29 (Review): `/watch cpu:...` warf einen `TypeError`, weil die
   Validierung Textfelder wie Zahlen prüfte.
 - 2026-10-29 (Review): Preisrückgänge von Servern aus der Baseline wurden nie

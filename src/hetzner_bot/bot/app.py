@@ -24,10 +24,10 @@ USER_AGENT = "hetzner-auction-discord-bot/0.1 (+https://www.hetzner.com/sb/)"
 
 class HetznerBot(commands.Bot):
     def __init__(self, config: Config) -> None:
-        super().__init__(command_prefix="!", intents=discord.Intents.default())
+        super().__init__(command_prefix=commands.when_mentioned, intents=discord.Intents.default())
         self.config = config
         self.store = Store(config.database_path)
-        self.http: httpx.AsyncClient | None = None
+        self.auction_http: httpx.AsyncClient | None = None
         self.last_servers: list[Server] = []
         self.last_poll_at = None
         self.last_error: str | None = None
@@ -35,7 +35,7 @@ class HetznerBot(commands.Bot):
 
     async def setup_hook(self) -> None:
         self.store.init_schema()
-        self.http = httpx.AsyncClient(timeout=10.0, headers={"User-Agent": USER_AGENT})
+        self.auction_http = httpx.AsyncClient(timeout=10.0, headers={"User-Agent": USER_AGENT})
         self.poller = Poller(self, self.store, self.config)
         self.poll_loop.change_interval(minutes=self.config.poll_minutes)
         for cog in ALL_COGS:
@@ -51,8 +51,8 @@ class HetznerBot(commands.Bot):
         """Snapshot aus dem letzten Poll; holt einmal frisch, wenn noch keiner da ist."""
         if self.last_servers:
             return self.last_servers
-        assert self.http is not None
-        self.last_servers = await fetch_servers(self.http, self.config.auction_url)
+        assert self.auction_http is not None
+        self.last_servers = await fetch_servers(self.auction_http, self.config.auction_url)
         return self.last_servers
 
     @tasks.loop(minutes=10)
@@ -69,8 +69,8 @@ class HetznerBot(commands.Bot):
 
     async def close(self) -> None:
         self.poll_loop.cancel()
-        if self.http is not None:
-            await self.http.aclose()
+        if self.auction_http is not None:
+            await self.auction_http.aclose()
         self.store.close()
         await super().close()
 

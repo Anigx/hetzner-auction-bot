@@ -219,7 +219,7 @@ class Poller:
 
     async def _load(self) -> list[Server]:
         if self._fetch is None:
-            return await fetch_servers(self.bot.http, self.config.auction_url)
+            return await fetch_servers(self.bot.auction_http, self.config.auction_url)
         result = self._fetch()
         if inspect.isawaitable(result):
             return await result
