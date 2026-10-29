@@ -63,9 +63,22 @@ docker compose pull && docker compose up -d
 | `MAX_POSTS_PER_RUN` | `15` | Obergrenze pro Lauf |
 | `MAX_FILTERS_PER_USER` | `5` | Filter pro Person und Server |
 | `LOG_LEVEL` | `INFO` | Log-Schwelle |
+| `GUILD_ID` | – | optional: Bot arbeitet nur auf diesem Server |
 | `AUCTION_URL` | Hetzner-URL | andere Datenquelle (Tests, Umzug) |
 | `LAST_POLL_FILE` | `data/last_poll` | Heartbeat für den Healthcheck |
 | `MAX_POLL_AGE_MINUTES` | `30` | ab wann der Healthcheck rot wird |
+
+## Feste Server-Bindung
+
+Mit `GUILD_ID` in der `.env` arbeitet der Bot nur auf diesem Server:
+
+- Commands werden anderswo mit „Dieser Bot ist nur fuer einen bestimmten Server
+  eingerichtet." abgelehnt.
+- Beim Start steht im Log `Fest gebunden an Server <ID>`, oder ein Fehler, wenn
+  der Bot dort nicht Mitglied ist.
+- Ohne `GUILD_ID` ist der Bot auf jedem Server nutzbar, auf dem er Mitglied ist.
+
+Der Wert ist serverseitig, nicht im Repo — er gehört in die `.env` beim Betreiber.
 
 ## Healthcheck
 

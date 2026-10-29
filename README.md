@@ -116,8 +116,8 @@ im Kanal, wenn er dreimal hintereinander keine Daten bekommt.
 
 Optionale Umgebungsvariablen: `AUCTION_URL` (andere Datenquelle),
 `LAST_POLL_FILE` und `MAX_POLL_AGE_MINUTES` (Healthcheck), `POLL_MINUTES`,
-`MAX_POSTS_PER_RUN`, `MAX_FILTERS_PER_USER` (Default 5), `LOG_LEVEL`.
-Die Logs sind JSON-Zeilen, eine pro Ereignis.
+`MAX_POSTS_PER_RUN`, `MAX_FILTERS_PER_USER` (Default 5), `GUILD_ID` (Bot nur auf
+einem Server), `LOG_LEVEL`. Die Logs sind JSON-Zeilen, eine pro Ereignis.
 
 ## Entwicklung
 

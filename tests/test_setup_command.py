@@ -9,9 +9,10 @@ class FakeGuild:
 
 
 class FakeInteraction:
-    def __init__(self, guild, user_permissions):
+    def __init__(self, guild, user_permissions, guild_id=None):
         self.guild = guild
         self.user = type("U", (), {"guild_permissions": user_permissions})()
+        self.client = type("C", (), {"config": type("K", (), {"guild_id": guild_id})()})()
 
 
 def test_missing_guild_is_rejected():
@@ -28,6 +29,18 @@ def test_guild_without_permission_is_rejected():
 def test_guild_with_permission_is_accepted():
     perms = type("P", (), {"manage_guild": True})()
     assert resolve_guild_id(FakeInteraction(FakeGuild(), perms)) == 42
+
+
+def test_other_guild_is_rejected_when_bound():
+    perms = type("P", (), {"manage_guild": True})()
+    with pytest.raises(ValueError) as excinfo:
+        resolve_guild_id(FakeInteraction(FakeGuild(), perms, guild_id=999))
+    assert "bestimmten Server" in str(excinfo.value)
+
+
+def test_bound_guild_is_accepted():
+    perms = type("P", (), {"manage_guild": True})()
+    assert resolve_guild_id(FakeInteraction(FakeGuild(), perms, guild_id=42)) == 42
 
 
 def test_category_is_rejected_with_helpful_message():

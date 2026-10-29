@@ -24,6 +24,7 @@ class Config:
     max_posts_per_run: int
     max_filters_per_user: int
     log_level: str
+    guild_id: int | None = None
 
 
 def _positive_int(env: Mapping[str, str], key: str, default: int) -> int:
@@ -36,6 +37,19 @@ def _positive_int(env: Mapping[str, str], key: str, default: int) -> int:
         raise ConfigError(f"{key} muss eine ganze Zahl sein, war: {raw!r}") from None
     if value <= 0:
         raise ConfigError(f"{key} muss größer als 0 sein, war: {value}")
+    return value
+
+
+def _optional_int(env: Mapping[str, str], key: str) -> int | None:
+    raw = (env.get(key) or "").strip()
+    if not raw:
+        return None
+    try:
+        value = int(raw)
+    except ValueError:
+        raise ConfigError(f"{key} muss eine ganze Zahl sein, war: {raw!r}") from None
+    if value <= 0:
+        raise ConfigError(f"{key} muss groesser als 0 sein, war: {value}")
     return value
 
 
@@ -58,4 +72,5 @@ def load_config(env: Mapping[str, str] | None = None) -> Config:
         max_posts_per_run=_positive_int(values, "MAX_POSTS_PER_RUN", 15),
         max_filters_per_user=_positive_int(values, "MAX_FILTERS_PER_USER", 5),
         log_level=log_level,
+        guild_id=_optional_int(values, "GUILD_ID"),
     )

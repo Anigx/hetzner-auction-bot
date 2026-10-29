@@ -50,6 +50,15 @@ class HetznerBot(commands.Bot):
         warning = guild_count_warning(guild_count)
         if warning:
             log.warning(warning)
+        if self.config.guild_id is not None:
+            if self.get_guild(self.config.guild_id) is None:
+                log.error(
+                    "GUILD_ID %s gesetzt, aber der Bot ist dort nicht Mitglied. "
+                    "Einladung pruefen.",
+                    self.config.guild_id,
+                )
+            else:
+                log.info("Fest gebunden an Server %s", self.config.guild_id)
         if not self.poll_loop.is_running():
             self.poll_loop.start()
 

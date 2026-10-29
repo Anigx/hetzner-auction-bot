@@ -6,10 +6,19 @@ import discord
 
 
 def require_guild_id(interaction: discord.Interaction) -> int:
-    """Guild-ID für Commands, die jedes Mitglied nutzen darf."""
+    """Guild-ID für Commands, die jedes Mitglied nutzen darf.
+
+    Ist ``GUILD_ID`` gesetzt, arbeitet der Bot nur auf diesem Server.
+    """
     guild = getattr(interaction, "guild", None)
     if guild is None:
         raise ValueError("Dieser Command funktioniert nur auf einem Discord-Server.")
+
+    config = getattr(getattr(interaction, "client", None), "config", None)
+    allowed = getattr(config, "guild_id", None)
+    if allowed is not None and int(guild.id) != int(allowed):
+        raise ValueError("Dieser Bot ist nur fuer einen bestimmten Server eingerichtet.")
+
     return int(guild.id)
 
 

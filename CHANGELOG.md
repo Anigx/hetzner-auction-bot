@@ -7,6 +7,8 @@ Alle nennenswerten Änderungen an diesem Projekt. Format nach
 ## [Unreleased]
 
 ### Hinzugefügt
+- 2026-10-29 (v0.3.1): `GUILD_ID` bindet den Bot fest an einen Server; Commands
+  werden anderswo abgelehnt, das Log meldet die Bindung.
 - 2026-10-29 (v0.3.0): Direktlink pro Server
   (`hetzner.com/sb/?freetext=<ID>`) in Embeds und `/matches`; `/help` erklärt
   Befehle und Filter; `/matches` zeigt die aktuell passenden Server; Zustellung
