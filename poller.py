@@ -45,12 +45,17 @@ def find_candidates(
     filters: Sequence[FilterRecord],
     is_seen: Callable[[int, int], bool],
     last_price: Callable[[int, int], Decimal | None],
+    baseline_price: Callable[[int, int], Decimal | None] | None = None,
 ) -> list[Candidate]:
     """Ermittelt pro Guild, welche Server gepostet werden müssen.
 
     - Unbekannter Server: posten, außer alle passenden Filter haben ihn schon gesehen.
     - Bekannter Server: nur posten, wenn der Preis unter dem zuletzt geposteten liegt.
+    - Server aus der Baseline (beim Filter-Anlegen gesehen): posten, wenn er unter
+      den Baseline-Preis fällt, auch wenn kein Post vorher im Kanal stand.
     """
+    baseline_of = baseline_price or (lambda _guild, _server: None)
+
     by_guild: dict[int, list[FilterRecord]] = {}
     for record in filters:
         by_guild.setdefault(record.guild_id, []).append(record)
@@ -68,7 +73,13 @@ def find_candidates(
 
             previous = last_price(guild_id, server.id)
             if previous is None:
-                if all(is_seen(record.id, server.id) for record in eligible):
+                baseline = baseline_of(guild_id, server.id)
+                dropped_below_baseline = (
+                    baseline is not None and server.price_month_eur < baseline
+                )
+                if not dropped_below_baseline and all(
+                    is_seen(record.id, server.id) for record in eligible
+                ):
                     continue
             elif server.price_month_eur >= previous:
                 continue
@@ -130,15 +141,16 @@ class Poller:
         return result
 
     async def _notify_all_guilds(self, text: str) -> None:
-        for record in self.store.list_filters():
-            channel_id = self.store.get_channel(record.guild_id)
+        guild_ids = sorted({record.guild_id for record in self.store.list_filters()})
+        for guild_id in guild_ids:
+            channel_id = self.store.get_channel(guild_id)
             channel = self.bot.get_channel(channel_id) if channel_id else None
             if channel is None:
                 continue
             try:
                 await channel.send(text)
             except Exception as exc:  # noqa: BLE001 - Ausfallmeldung darf nichts kippen
-                log.warning("Ausfallmeldung an Guild %s fehlgeschlagen: %s", record.guild_id, exc)
+                log.warning("Ausfallmeldung an Guild %s fehlgeschlagen: %s", guild_id, exc)
 
     async def run_once(self) -> PollReport:
         try:
@@ -166,6 +178,20 @@ class Poller:
 
         by_id = {server.id: server for server in servers}
         filters = self.store.list_filters()
+
+        # Filter, deren Baseline beim Anlegen nicht gezogen werden konnte.
+        for record in filters:
+            if not record.baseline_pending:
+                continue
+            matching = [server for server in servers if matches(record.criteria, server)]
+            self.store.mark_seen(record.id, [server.id for server in matching])
+            for server in matching:
+                self.store.record_baseline(
+                    record.guild_id, server.id, server.price_month_eur
+                )
+            self.store.set_baseline_pending(record.id, False)
+            log.info("Baseline fuer Filter %s nachgeholt (%s Server)", record.id, len(matching))
+
         filters_by_id = {record.id: record for record in filters}
         max_posts = self.max_posts
 
@@ -191,7 +217,11 @@ class Poller:
             )
 
         candidates = pending + find_candidates(
-            servers, filters, self.store.is_seen, self.store.last_price
+            servers,
+            filters,
+            self.store.is_seen,
+            self.store.last_price,
+            self.store.baseline_price,
         )
 
         unique: list[Candidate] = []
@@ -224,20 +254,13 @@ class Poller:
     async def _deliver(self, candidate: Candidate) -> bool:
         server = candidate.server
         guild_id = candidate.guild_id
+        self.store.enqueue(guild_id, server.id, candidate.filter_ids)
+
         channel_id = self.store.get_channel(guild_id)
         channel = self.bot.get_channel(channel_id) if channel_id else None
 
         if channel is None:
-            attempts = self.store.bump_attempts(guild_id, server.id)
-            log.warning(
-                "Kein Kanal fuer Guild %s (Versuch %s/%s)", guild_id, attempts, MAX_ATTEMPTS
-            )
-            if attempts >= MAX_ATTEMPTS:
-                self.store.dequeue(guild_id, server.id)
-                log.error("Treffer %s fuer Guild %s verworfen", server.id, guild_id)
-            else:
-                self.store.enqueue(guild_id, server.id, candidate.filter_ids)
-            return False
+            return self._retry_or_give_up(candidate, "kein Kanal eingerichtet")
 
         try:
             await channel.send(
@@ -245,16 +268,41 @@ class Poller:
                 embed=build_embed(server, candidate.previous_price),
             )
         except Exception as exc:  # noqa: BLE001 - ein kaputter Kanal darf den Lauf nicht toeten
-            attempts = self.store.bump_attempts(guild_id, server.id)
-            log.warning("Post fuer %s fehlgeschlagen (Versuch %s): %s", server.id, attempts, exc)
-            if attempts >= MAX_ATTEMPTS:
-                self.store.dequeue(guild_id, server.id)
-            else:
-                self.store.enqueue(guild_id, server.id, candidate.filter_ids)
-            return False
+            self.bot.last_error = f"Zustellung an Guild {guild_id} fehlgeschlagen: {exc}"
+            return self._retry_or_give_up(candidate, f"Post fehlgeschlagen: {exc}")
 
         self.store.record_post(guild_id, server.id, server.price_month_eur)
         for filter_id in candidate.filter_ids:
             self.store.mark_seen(filter_id, [server.id])
         self.store.dequeue(guild_id, server.id)
         return True
+
+    def _retry_or_give_up(self, candidate: Candidate, reason: str) -> bool:
+        """Zaehlt einen Fehlversuch. Nach MAX_ATTEMPTS wird der Treffer verworfen und
+        als gesehen markiert, damit er nicht in jeder Runde neu auftaucht."""
+        guild_id = candidate.guild_id
+        server_id = candidate.server.id
+        attempts = self.store.bump_attempts(guild_id, server_id)
+
+        if attempts >= MAX_ATTEMPTS:
+            self.store.dequeue(guild_id, server_id)
+            for filter_id in candidate.filter_ids:
+                self.store.mark_seen(filter_id, [server_id])
+            log.error(
+                "Treffer %s fuer Guild %s nach %s Versuchen verworfen: %s",
+                server_id,
+                guild_id,
+                attempts,
+                reason,
+            )
+            return False
+
+        log.warning(
+            "Treffer %s fuer Guild %s, Versuch %s/%s: %s",
+            server_id,
+            guild_id,
+            attempts,
+            MAX_ATTEMPTS,
+            reason,
+        )
+        return False

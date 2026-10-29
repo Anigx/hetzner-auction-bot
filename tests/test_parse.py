@@ -2,7 +2,9 @@ import json
 from decimal import Decimal
 from pathlib import Path
 
-from hetzner.client import parse_servers
+import pytest
+
+from hetzner.client import ParseError, parse_servers
 
 FIXTURE = json.loads(Path("tests/fixtures/auction_snapshot.json").read_text("utf-8"))
 
@@ -32,3 +34,20 @@ def test_parse_survives_missing_fields():
     assert servers[0].id == 1
     assert servers[0].price_month_eur == Decimal("0")
     assert servers[0].reduce_next_at is None
+
+
+def test_missing_server_list_is_an_error():
+    with pytest.raises(ParseError):
+        parse_servers({"servers": []})
+    with pytest.raises(ParseError):
+        parse_servers({})
+
+
+def test_empty_server_list_is_an_error():
+    with pytest.raises(ParseError):
+        parse_servers({"server": []})
+
+
+def test_broken_reduce_timestamp_does_not_raise():
+    payload = {"server": [{"Id": 1, "Timer": {"ReduceNextTimestamp": 10**18}}]}
+    assert parse_servers(payload)[0].reduce_next_at is None

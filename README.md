@@ -4,7 +4,7 @@ Beobachtet die [Hetzner-Serverbörse](https://www.hetzner.com/sb/) und postet ne
 passende Server in einen Discord-Kanal. Jede Person legt per Slash-Command eigene
 Filter an und entscheidet, ob sie bei Treffern getaggt werden will.
 
-- Prüft alle 10 Minuten, ein einziger HTTP-Request pro Lauf
+- Prüft alle 10 Minuten mit einem einzigen HTTP-Request pro Lauf
 - Postet nur Server, die zu mindestens einem Filter passen
 - Jeder Server erscheint einmal; fällt er im Preis, kommt eine zweite Meldung mit
   altem und neuem Preis
@@ -26,11 +26,17 @@ Filter an und entscheidet, ob sie bei Treffern getaggt werden will.
 ```bash
 cp .env.example .env
 # DISCORD_TOKEN in .env eintragen
+mkdir -p data
+sudo chown 10001:10001 data      # Container laeuft als uid 10001
 docker compose up -d --build
 docker compose logs -f bot
 ```
 
 Ohne `DISCORD_TOKEN` bricht der Start mit einer klaren Meldung ab.
+
+Das `data/`-Verzeichnis muss vor dem ersten Start existieren und dem Container-User
+gehören — sonst legt Docker es als `root` an und der Bot kann die SQLite-Datei
+nicht öffnen.
 
 ## Benutzung
 
@@ -67,6 +73,10 @@ rm data/bot.sqlite3             # alles zurücksetzen (Filter, Verlauf)
 Der Healthcheck prüft `data/last_poll`: Ist der letzte erfolgreiche Abruf älter als
 30 Minuten, gilt der Container als unhealthy. Zusätzlich meldet sich der Bot selbst
 im Kanal, wenn er dreimal hintereinander keine Daten bekommt.
+
+Optionale Umgebungsvariablen: `AUCTION_URL` (andere Datenquelle),
+`LAST_POLL_FILE` und `MAX_POLL_AGE_MINUTES` (Healthcheck), `POLL_MINUTES`,
+`MAX_POSTS_PER_RUN`, `LOG_LEVEL`.
 
 ## Entwicklung
 

@@ -34,3 +34,11 @@ def test_from_json_tolerates_unknown_keys():
     assert Criteria.from_json({"max_price": 50, "gibt_es_nicht": 1}) == Criteria(
         max_price=Decimal("50")
     )
+
+
+def test_cpu_contains_alone_is_valid():
+    Criteria(cpu_contains="ryzen").validate()
+
+
+def test_validate_ignores_non_numeric_fields():
+    Criteria(cpu_contains="ryzen", min_ram=64).validate()

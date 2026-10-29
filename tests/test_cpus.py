@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from hetzner.client import parse_servers
-from hetzner.cpus import cores_for
+from hetzner.cpus import cores_for, unknown_cpu_names
 
 
 def test_known_cpus():
@@ -19,3 +19,9 @@ def test_every_cpu_in_fixture_is_known():
     payload = json.loads(Path("tests/fixtures/auction_snapshot.json").read_text("utf-8"))
     unknown = {s.cpu_name for s in parse_servers(payload) if cores_for(s.cpu_name) is None}
     assert unknown == set(), f"CPU-Tabelle ergaenzen: {sorted(unknown)}"
+
+
+def test_unknown_cpu_names_lists_only_unknown_models():
+    assert unknown_cpu_names(["AMD Ryzen 9 5950X", "Neu 9999"]) == ["Neu 9999"]
+    assert unknown_cpu_names(["AMD Ryzen 9 5950X"]) == []
+    assert unknown_cpu_names(["Neu 9999", "Neu 9999"]) == ["Neu 9999"]

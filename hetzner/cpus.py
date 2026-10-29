@@ -8,6 +8,11 @@ in der Auktion auftaucht.
 
 from __future__ import annotations
 
+import logging
+from typing import Iterable
+
+log = logging.getLogger(__name__)
+
 CORES_BY_CPU: dict[str, int] = {
     "AMD EPYC 7502P": 32,
     "AMD Ryzen 5 3600": 6,
@@ -43,3 +48,8 @@ def cores_for(cpu_name: str) -> int | None:
     if not cpu_name:
         return None
     return _LOOKUP.get(cpu_name.strip().lower())
+
+
+def unknown_cpu_names(cpu_names: Iterable[str]) -> list[str]:
+    """Alle CPU-Namen aus der Liste, die in der Tabelle fehlen — alphabetisch, ohne Dubletten."""
+    return sorted({name for name in cpu_names if name and cores_for(name) is None})

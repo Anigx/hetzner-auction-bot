@@ -11,8 +11,10 @@ class FakeChannel:
     def __init__(self, fail=False):
         self.fail = fail
         self.sent = []
+        self.attempts = 0
 
     async def send(self, content=None, embed=None):
+        self.attempts += 1
         if self.fail:
             raise RuntimeError("keine Rechte")
         self.sent.append((content, embed))
@@ -123,3 +125,51 @@ async def test_successful_run_writes_heartbeat(store, tmp_path):
     )
     await poller.run_once()
     assert (tmp_path / "data" / "last_poll").exists()
+
+
+@pytest.mark.asyncio
+async def test_broken_channel_gives_up_after_three_attempts(store):
+    store.set_channel(1, 99)
+    store.save_filter(1, 2, "standard", Criteria(min_ram=64), mention=False)
+    channel = FakeChannel(fail=True)
+    poller = Poller(FakeBot(channel), store, fetch=lambda: [make_server()], max_posts=15)
+
+    for _ in range(5):
+        await poller.run_once()
+
+    assert channel.attempts == 3
+    assert store.queued() == []
+
+
+@pytest.mark.asyncio
+async def test_outage_message_is_sent_once_per_guild(store):
+    store.set_channel(1, 99)
+    store.save_filter(1, 2, "a", Criteria(min_ram=64), mention=False)
+    store.save_filter(1, 3, "b", Criteria(min_ram=32), mention=False)
+    channel = FakeChannel()
+
+    async def failing_fetch():
+        raise RuntimeError("kaputt")
+
+    poller = Poller(FakeBot(channel), store, fetch=failing_fetch, max_posts=15)
+    for _ in range(3):
+        report = await poller.run_once()
+
+    assert report.failed is True
+    assert len(channel.sent) == 1
+    assert "nicht an die Daten" in channel.sent[0][0]
+
+
+@pytest.mark.asyncio
+async def test_pending_baseline_is_applied_on_next_run(store):
+    store.set_channel(1, 99)
+    record = store.save_filter(1, 2, "standard", Criteria(min_ram=64), mention=False)
+    store.set_baseline_pending(record.id, True)
+    channel = FakeChannel()
+    poller = Poller(FakeBot(channel), store, fetch=lambda: [make_server()], max_posts=15)
+
+    await poller.run_once()
+
+    assert channel.sent == []
+    assert store.get_filter(1, 2, "standard").baseline_pending is False
+    assert store.baseline_price(1, 10) == Decimal("45")

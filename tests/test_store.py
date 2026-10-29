@@ -57,3 +57,17 @@ def test_queue_roundtrip_and_attempts(store):
     assert store.bump_attempts(1, 10) == 1
     store.dequeue(1, 10)
     assert store.queued() == []
+
+
+def test_baseline_price_roundtrip(store):
+    assert store.baseline_price(1, 10) is None
+    store.record_baseline(1, 10, Decimal("45"))
+    assert store.baseline_price(1, 10) == Decimal("45")
+    assert store.baseline_price(2, 10) is None
+
+
+def test_baseline_pending_flag(store):
+    record = store.save_filter(1, 2, "s", Criteria(min_ram=64), mention=False)
+    assert record.baseline_pending is False
+    store.set_baseline_pending(record.id, True)
+    assert store.get_filter(1, 2, "s").baseline_pending is True

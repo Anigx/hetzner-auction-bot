@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS filters (
     criteria_json TEXT NOT NULL,
     mention       INTEGER NOT NULL DEFAULT 0,
     active        INTEGER NOT NULL DEFAULT 1,
+    baseline_pending INTEGER NOT NULL DEFAULT 0,
     created_at    TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE (guild_id, user_id, name)
 );
@@ -41,6 +42,14 @@ CREATE TABLE IF NOT EXISTS posts (
     server_id      INTEGER NOT NULL,
     last_price_eur TEXT NOT NULL,
     posted_at      TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (guild_id, server_id)
+);
+
+CREATE TABLE IF NOT EXISTS baselines (
+    guild_id    INTEGER NOT NULL,
+    server_id   INTEGER NOT NULL,
+    price_eur   TEXT NOT NULL,
+    recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (guild_id, server_id)
 );
 
@@ -75,6 +84,13 @@ class Store:
 
     def init_schema(self) -> None:
         self._db.executescript(SCHEMA)
+        # Migration fuer Datenbanken aus der Zeit vor baseline_pending.
+        try:
+            self._db.execute(
+                "ALTER TABLE filters ADD COLUMN baseline_pending INTEGER NOT NULL DEFAULT 0"
+            )
+        except sqlite3.OperationalError:
+            pass
         self._db.commit()
 
     def close(self) -> None:
@@ -113,6 +129,7 @@ class Store:
             criteria=Criteria.from_json(json.loads(row["criteria_json"])),
             mention=bool(row["mention"]),
             active=bool(row["active"]),
+            baseline_pending=bool(row["baseline_pending"]),
         )
 
     def save_filter(
@@ -185,6 +202,12 @@ class Store:
         self._db.commit()
         return cursor.rowcount > 0
 
+    def set_baseline_pending(self, filter_id: int, pending: bool) -> None:
+        self._db.execute(
+            "UPDATE filters SET baseline_pending = ? WHERE id = ?", (int(pending), filter_id)
+        )
+        self._db.commit()
+
     # -- Baseline ---------------------------------------------------------
 
     def mark_seen(self, filter_id: int, server_ids: Iterable[int]) -> None:
@@ -222,6 +245,28 @@ class Store:
             (guild_id, server_id, str(price)),
         )
         self._db.commit()
+
+    # -- Baseline ---------------------------------------------------------
+
+    def record_baseline(self, guild_id: int, server_id: int, price: Decimal) -> None:
+        self._db.execute(
+            """
+            INSERT INTO baselines (guild_id, server_id, price_eur, recorded_at)
+            VALUES (?, ?, ?, datetime('now'))
+            ON CONFLICT(guild_id, server_id) DO UPDATE SET
+                price_eur = excluded.price_eur,
+                recorded_at = excluded.recorded_at
+            """,
+            (guild_id, server_id, str(price)),
+        )
+        self._db.commit()
+
+    def baseline_price(self, guild_id: int, server_id: int) -> Decimal | None:
+        row = self._db.execute(
+            "SELECT price_eur FROM baselines WHERE guild_id = ? AND server_id = ?",
+            (guild_id, server_id),
+        ).fetchone()
+        return None if row is None else Decimal(row["price_eur"])
 
     # -- Warteschlange ----------------------------------------------------
 

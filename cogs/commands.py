@@ -14,6 +14,7 @@ from discord.ext import commands
 
 from filters import Criteria, CriteriaError, FilterRecord, matches
 from hetzner.client import fetch_servers
+from hetzner.cpus import unknown_cpu_names
 from hetzner.models import Server
 
 log = logging.getLogger(__name__)
@@ -77,11 +78,21 @@ def build_criteria(
 def snap_to_current(
     store, record: FilterRecord, servers: Sequence[Server]
 ) -> int:
-    """Markiert alle aktuell passenden Server als gesehen, ohne sie zu posten."""
-    ids = [server.id for server in servers if matches(record.criteria, server)]
-    if ids:
-        store.mark_seen(record.id, ids)
-    return len(ids)
+    """Markiert alle aktuell passenden Server als gesehen und merkt sich ihren Preis."""
+    matching = [server for server in servers if matches(record.criteria, server)]
+    if matching:
+        store.mark_seen(record.id, [server.id for server in matching])
+        for server in matching:
+            store.record_baseline(record.guild_id, server.id, server.price_month_eur)
+    store.set_baseline_pending(record.id, False)
+    return len(matching)
+
+
+def channel_warning(channel_id: int | None) -> str | None:
+    """Hinweis, wenn fuer diese Guild noch kein Kanal eingerichtet ist."""
+    if channel_id is None:
+        return "Noch kein Kanal eingerichtet — ein Admin muss `/setup` ausführen."
+    return None
 
 
 def _format_local(moment: datetime) -> str:
@@ -209,20 +220,25 @@ class Commands(commands.Cog):
             servers = await self._current_servers()
         except Exception as exc:  # noqa: BLE001 - dem Nutzer eine klare Meldung geben
             log.warning("Snapshot fuer Baseline fehlgeschlagen: %s", exc)
+            self.bot.store.set_baseline_pending(record.id, True)
             await interaction.followup.send(
                 f"Filter '{record.name}' gespeichert. Die aktuelle Serverbörse konnte ich "
-                "gerade nicht laden — ab jetzt melde ich neue Treffer.",
+                "gerade nicht laden — die Baseline hole ich beim nächsten Abruf nach, "
+                "damit der Kanal nicht mit Altbestand geflutet wird.",
                 ephemeral=True,
             )
             return
 
         count = snap_to_current(self.bot.store, record, servers)
         ping = "mit Ping" if mention else "ohne Ping"
-        await interaction.followup.send(
+        text = (
             f"Filter '{record.name}' gespeichert ({ping}). "
-            f"Aktuell passen {count} Server — ab jetzt melde ich neue.",
-            ephemeral=True,
+            f"Aktuell passen {count} Server — ab jetzt melde ich neue."
         )
+        warning = channel_warning(self.bot.store.get_channel(guild_id))
+        if warning:
+            text += f"\n{warning}"
+        await interaction.followup.send(text, ephemeral=True)
 
     @app_commands.command(name="filters", description="Zeigt deine gespeicherten Filter.")
     async def list_filters_cmd(self, interaction: discord.Interaction) -> None:
@@ -309,9 +325,14 @@ class Commands(commands.Cog):
             f"Letzter Abruf: {_format_local(last_poll) if last_poll else 'noch keiner'}",
             f"Server im Snapshot: {len(servers)}",
             f"Aktive Filter hier: {len(active_filters)}",
+            "Kanal: "
+            + ("eingerichtet" if channel_warning(self.bot.store.get_channel(guild_id)) is None else "fehlt"),
             f"Nächster Preisfall: {_format_local(next_reduce) if next_reduce else 'unbekannt'}",
             f"Wartende Treffer: {len(self.bot.store.queued())}",
         ]
+        unknown = unknown_cpu_names(server.cpu_name for server in servers)
+        if unknown:
+            lines.append(f"Unbekannte CPUs (Kern-Filter greift dort nicht): {', '.join(unknown)}")
         if last_error:
             lines.append(f"Letzter Fehler: {last_error}")
         await interaction.response.send_message("\n".join(lines), ephemeral=True)

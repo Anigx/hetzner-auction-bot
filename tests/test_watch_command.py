@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from cogs.commands import build_criteria, snap_to_current
+from cogs.commands import build_criteria, channel_warning, snap_to_current
 from filters import Criteria, CriteriaError
 from hetzner.models import Server
 from store import Store
@@ -42,6 +42,22 @@ def test_build_criteria_without_any_criterion_raises():
         )
 
 
+def test_build_criteria_accepts_cpu_only():
+    crit = build_criteria(
+        max_price=None,
+        min_ram=None,
+        disk_type=None,
+        location=None,
+        cpu="ryzen",
+        min_disk=None,
+        ecc=None,
+        no_setup=None,
+        min_bandwidth=None,
+        min_cores=None,
+    )
+    assert crit.cpu_contains == "ryzen"
+
+
 def test_snap_marks_all_current_matches(tmp_path):
     store = Store(tmp_path / "t.sqlite3")
     store.init_schema()
@@ -70,3 +86,9 @@ def test_snap_marks_all_current_matches(tmp_path):
     ]
     assert snap_to_current(store, rec, servers) == 1
     assert store.is_seen(rec.id, 10) is True
+    assert store.baseline_price(1, 10) == Decimal("45")
+
+
+def test_channel_warning():
+    assert channel_warning(123) is None
+    assert "/setup" in channel_warning(None)

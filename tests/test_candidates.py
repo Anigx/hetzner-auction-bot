@@ -104,3 +104,26 @@ def test_guilds_are_independent():
         lambda g, s: None,
     )
     assert {c.guild_id for c in out} == {1, 2}
+
+
+def test_baselined_price_drop_is_posted():
+    out = find_candidates(
+        [server(price="39")],
+        [flt(min_ram=64)],
+        lambda f, s: True,
+        lambda g, s: None,
+        lambda g, s: Decimal("45"),
+    )
+    assert len(out) == 1
+    assert out[0].previous_price is None
+
+
+def test_baselined_same_price_is_not_posted():
+    out = find_candidates(
+        [server(price="45")],
+        [flt(min_ram=64)],
+        lambda f, s: True,
+        lambda g, s: None,
+        lambda g, s: Decimal("45"),
+    )
+    assert out == []

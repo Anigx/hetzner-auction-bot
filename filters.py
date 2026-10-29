@@ -22,6 +22,8 @@ _CRITERION_FIELDS = (
     "min_bandwidth",
 )
 
+_NUMERIC_FIELDS = ("max_price", "min_ram", "min_cores", "min_disk", "min_bandwidth")
+
 
 class CriteriaError(ValueError):
     """Ein Filter ist ungültig."""
@@ -68,7 +70,7 @@ class Criteria:
         )
 
     def validate(self) -> None:
-        for name in _CRITERION_FIELDS:
+        for name in _NUMERIC_FIELDS:
             value = getattr(self, name)
             if value is not None and value <= 0:
                 raise CriteriaError(f"{name} muss groesser als 0 sein")
@@ -121,6 +123,7 @@ class FilterRecord:
     criteria: Criteria
     mention: bool
     active: bool = True
+    baseline_pending: bool = False
 
 
 def matches(criteria: Criteria, server: Server) -> bool:

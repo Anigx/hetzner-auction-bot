@@ -20,6 +20,10 @@ class FetchError(RuntimeError):
     """Die Auktionsdaten konnten nicht geholt werden."""
 
 
+class ParseError(ValueError):
+    """Die Antwort hat nicht die erwartete Struktur."""
+
+
 def _as_dict(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
@@ -51,6 +55,16 @@ def _location_from_datacenter(datacenter: str) -> str:
     return prefix if prefix in _LOCATIONS else ""
 
 
+def _parse_reduce_ts(value: Any) -> datetime | None:
+    timestamp = _as_int(value, 0)
+    if timestamp <= 0:
+        return None
+    try:
+        return datetime.fromtimestamp(timestamp, tz=UTC)
+    except (OSError, OverflowError, ValueError):
+        return None
+
+
 def _parse_server(raw: dict[str, Any]) -> Server:
     hardware = _as_dict(raw.get("Hardware"))
     cpu = _as_dict(hardware.get("CPU"))
@@ -62,8 +76,7 @@ def _parse_server(raw: dict[str, Any]) -> Server:
     prices = _as_dict(raw.get("Prices"))
     timer = _as_dict(raw.get("Timer"))
 
-    reduce_ts = _as_int(timer.get("ReduceNextTimestamp"), 0)
-    reduce_next_at = datetime.fromtimestamp(reduce_ts, tz=UTC) if reduce_ts > 0 else None
+    reduce_next_at = _parse_reduce_ts(timer.get("ReduceNextTimestamp"))
 
     return Server(
         id=_as_int(raw.get("Id")),
@@ -88,10 +101,15 @@ def _parse_server(raw: dict[str, Any]) -> Server:
 
 
 def parse_servers(payload: dict[str, Any]) -> list[Server]:
-    """Wandelt die Auktions-JSON in Server-Objekte. Wirft bei kaputten Einträgen nicht."""
-    raw_servers = payload.get("server")
-    if not isinstance(raw_servers, list):
-        return []
+    """Wandelt die Auktions-JSON in Server-Objekte.
+
+    Eine fehlende, leere oder falsch typisierte `server`-Liste ist ein Fehler und
+    keine leere Auktion — sonst würde ein Formatwechsel still als "keine Server"
+    durchgehen und die Warteschlange leeren.
+    """
+    raw_servers = payload.get("server") if isinstance(payload, dict) else None
+    if not isinstance(raw_servers, list) or not raw_servers:
+        raise ParseError("Antwort enthaelt keine brauchbare 'server'-Liste")
     return [_parse_server(item) for item in raw_servers if isinstance(item, dict)]
 
 
