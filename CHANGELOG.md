@@ -38,6 +38,8 @@ Alle nennenswerten Änderungen an diesem Projekt. Format nach
 - 2026-10-29 (Review): Kaputter `ReduceNextTimestamp` bricht den Lauf nicht mehr ab.
 
 ### Geändert
+- 2026-10-29: Action-Versionen auf den Node-24-Stand gehoben (`checkout@v7`,
+  `setup-python@v7`, Docker-Actions `v4`/`v6`/`v7`). Release `v0.1.1`.
 - 2026-10-29: Review-Runde eingearbeitet: Baseline getrennt von `posts` (`seen`
   pro Filter), `posts` pro Guild, Warteschlange für Nachzügler, Ersetzen statt
   Mischen bei `/watch`, Filter-Semantik für Platten und Kerne festgeschrieben,
