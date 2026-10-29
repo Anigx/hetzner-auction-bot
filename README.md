@@ -1,5 +1,7 @@
 ![Hetzner Auction Bot](docs/assets/banner.png)
 
+[![CI](https://github.com/Anigx/hetzner-auction-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/Anigx/hetzner-auction-bot/actions/workflows/ci.yml)
+
 # Hetzner-Auktions-Bot für Discord
 
 Beobachtet die [Hetzner-Serverbörse](https://www.hetzner.com/sb/) und postet neue
@@ -70,6 +72,12 @@ docker compose ps               # Healthcheck-Status
 docker compose logs -f bot      # JSON-Zeilen
 docker compose restart bot
 rm data/bot.sqlite3             # alles zurücksetzen (Filter, Verlauf)
+```
+
+Alternativ das fertige Image aus der GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/anigx/hetzner-auction-bot:latest
 ```
 
 Der Healthcheck prüft `data/last_poll`: Ist der letzte erfolgreiche Abruf älter als
