@@ -7,6 +7,10 @@ Alle nennenswerten Änderungen an diesem Projekt. Format nach
 ## [Unreleased]
 
 ### Hinzugefügt
+- 2026-10-29: CI-Workflow (Tests bei Push und PR) und Release-Workflow: ein Tag
+  `v*` baut das Container-Image nach `ghcr.io/anigx/hetzner-auction-bot` und legt
+  das Release mit den Notes aus `docs/releases/notes.md` an. `v0.1.0` ist
+  veröffentlicht, Image öffentlich ziehbar.
 - 2026-10-29: Bot umgesetzt: Parser, CPU-Tabelle, Filter, SQLite-Speicher,
   Dedupe/Preisverfall, Embeds, Slash-Commands, Poll-Loop, Docker, Healthcheck,
   README. 74 Tests grün.
