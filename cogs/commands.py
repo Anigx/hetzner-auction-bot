@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from decimal import Decimal
 from typing import Literal, Sequence
+from zoneinfo import ZoneInfo
 
 import discord
 from discord import app_commands
@@ -15,6 +17,8 @@ from hetzner.client import fetch_servers
 from hetzner.models import Server
 
 log = logging.getLogger(__name__)
+
+BERLIN = ZoneInfo("Europe/Berlin")
 
 DiskType = Literal["egal", "nvme", "sata", "hdd"]
 Location = Literal["egal", "FSN", "NBG", "HEL"]
@@ -78,6 +82,46 @@ def snap_to_current(
     if ids:
         store.mark_seen(record.id, ids)
     return len(ids)
+
+
+def _format_local(moment: datetime) -> str:
+    return moment.astimezone(BERLIN).strftime("%d.%m.%Y %H:%M")
+
+
+def _criteria_parts(criteria: Criteria) -> list[str]:
+    parts: list[str] = []
+    if criteria.max_price is not None:
+        parts.append(f"≤ {criteria.max_price} €/Monat")
+    if criteria.min_ram is not None:
+        parts.append(f"≥ {criteria.min_ram} GB RAM")
+    if criteria.min_cores is not None:
+        parts.append(f"≥ {criteria.min_cores} Kerne")
+    if criteria.cpu_contains is not None:
+        parts.append(f"CPU enthält '{criteria.cpu_contains}'")
+    if criteria.min_disk is not None:
+        suffix = "" if criteria.disk_type == "egal" else f" {criteria.disk_type.upper()}"
+        parts.append(f"≥ {criteria.min_disk} TB{suffix}")
+    elif criteria.disk_type != "egal":
+        parts.append(criteria.disk_type.upper())
+    if criteria.location != "egal":
+        parts.append(criteria.location)
+    if criteria.ecc == "ja":
+        parts.append("ECC")
+    if criteria.no_setup:
+        parts.append("ohne Setup")
+    if criteria.min_bandwidth is not None:
+        parts.append(f"≥ {criteria.min_bandwidth} Mbit/s")
+    return parts or ["alles"]
+
+
+def describe_filter(record: FilterRecord, match_count: int) -> str:
+    text = f"**{record.name}** — " + ", ".join(_criteria_parts(record.criteria))
+    text += f" · {match_count} passende Server"
+    if record.mention:
+        text += " · Ping an"
+    if not record.active:
+        text += " · pausiert"
+    return text
 
 
 class Commands(commands.Cog):
@@ -179,3 +223,95 @@ class Commands(commands.Cog):
             f"Aktuell passen {count} Server — ab jetzt melde ich neue.",
             ephemeral=True,
         )
+
+    @app_commands.command(name="filters", description="Zeigt deine gespeicherten Filter.")
+    async def list_filters_cmd(self, interaction: discord.Interaction) -> None:
+        try:
+            guild_id = require_guild_id(interaction)
+        except ValueError as exc:
+            await interaction.response.send_message(str(exc), ephemeral=True)
+            return
+
+        records = self.bot.store.list_filters(guild_id, interaction.user.id)
+        if not records:
+            await interaction.response.send_message(
+                "Du hast noch keinen Filter. Leg einen mit `/watch` an.", ephemeral=True
+            )
+            return
+
+        servers = self.bot.last_servers
+        lines = [
+            describe_filter(
+                record, sum(1 for server in servers if matches(record.criteria, server))
+            )
+            for record in records
+        ]
+        await interaction.response.send_message("\n".join(lines), ephemeral=True)
+
+    @app_commands.command(name="unwatch", description="Loescht einen deiner Filter.")
+    @app_commands.describe(name="Name des Filters")
+    async def unwatch(self, interaction: discord.Interaction, name: str = "standard") -> None:
+        try:
+            guild_id = require_guild_id(interaction)
+        except ValueError as exc:
+            await interaction.response.send_message(str(exc), ephemeral=True)
+            return
+
+        if self.bot.store.delete_filter(guild_id, interaction.user.id, name):
+            text = f"Filter '{name}' geloescht."
+        else:
+            text = f"Filter '{name}' nicht gefunden."
+        await interaction.response.send_message(text, ephemeral=True)
+
+    @app_commands.command(name="pause", description="Pausiert einen Filter, ohne ihn zu loeschen.")
+    @app_commands.describe(name="Name des Filters")
+    async def pause(self, interaction: discord.Interaction, name: str = "standard") -> None:
+        await self._set_active(interaction, name, False)
+
+    @app_commands.command(name="resume", description="Aktiviert einen pausierten Filter wieder.")
+    @app_commands.describe(name="Name des Filters")
+    async def resume(self, interaction: discord.Interaction, name: str = "standard") -> None:
+        await self._set_active(interaction, name, True)
+
+    async def _set_active(
+        self, interaction: discord.Interaction, name: str, active: bool
+    ) -> None:
+        try:
+            guild_id = require_guild_id(interaction)
+        except ValueError as exc:
+            await interaction.response.send_message(str(exc), ephemeral=True)
+            return
+
+        if self.bot.store.set_active(guild_id, interaction.user.id, name, active):
+            text = f"Filter '{name}' ist jetzt {'aktiv' if active else 'pausiert'}."
+        else:
+            text = f"Filter '{name}' nicht gefunden."
+        await interaction.response.send_message(text, ephemeral=True)
+
+    @app_commands.command(name="status", description="Zeigt den Zustand des Bots.")
+    async def status(self, interaction: discord.Interaction) -> None:
+        try:
+            guild_id = require_guild_id(interaction)
+        except ValueError as exc:
+            await interaction.response.send_message(str(exc), ephemeral=True)
+            return
+
+        servers = self.bot.last_servers
+        last_poll = getattr(self.bot, "last_poll_at", None)
+        last_error = getattr(self.bot, "last_error", None)
+        active_filters = self.bot.store.list_filters(guild_id, active_only=True)
+        next_reduce = min(
+            (server.reduce_next_at for server in servers if server.reduce_next_at is not None),
+            default=None,
+        )
+
+        lines = [
+            f"Letzter Abruf: {_format_local(last_poll) if last_poll else 'noch keiner'}",
+            f"Server im Snapshot: {len(servers)}",
+            f"Aktive Filter hier: {len(active_filters)}",
+            f"Nächster Preisfall: {_format_local(next_reduce) if next_reduce else 'unbekannt'}",
+            f"Wartende Treffer: {len(self.bot.store.queued())}",
+        ]
+        if last_error:
+            lines.append(f"Letzter Fehler: {last_error}")
+        await interaction.response.send_message("\n".join(lines), ephemeral=True)
