@@ -36,6 +36,7 @@ class Candidate:
     filter_ids: tuple[int, ...]
     user_ids: tuple[int, ...]
     previous_price: Decimal | None
+    vat_rates: tuple[float, ...] = ()
 
 
 @dataclass(frozen=True)

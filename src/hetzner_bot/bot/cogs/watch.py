@@ -98,6 +98,7 @@ class WatchCog(commands.Cog):
         min_bandwidth="Mindest-Anbindung in Mbit/s",
         mention="Bei Treffern taggen",
         delivery="kanal = in den Kanal, dm = nur per Direktnachricht an dich",
+        steuer="Dein Steuersatz in Prozent (z. B. 19); gilt ab jetzt fuer deine Anzeige",
     )
     async def watch(
         self,
@@ -115,6 +116,7 @@ class WatchCog(commands.Cog):
         min_bandwidth: int | None = None,
         mention: bool = False,
         delivery: Delivery = "kanal",
+        steuer: float | None = None,
     ) -> None:
         await interaction.response.defer(ephemeral=True)
 
@@ -135,6 +137,14 @@ class WatchCog(commands.Cog):
         except (ValueError, PermissionError, CriteriaError) as exc:
             await interaction.followup.send(str(exc), ephemeral=True)
             return
+
+        if steuer is not None:
+            if not 0 <= steuer <= 100:
+                await interaction.followup.send(
+                    "Der Steuersatz muss zwischen 0 und 100 liegen.", ephemeral=True
+                )
+                return
+            self.bot.store.set_user_vat(interaction.user.id, steuer)
 
         clean_name = name.strip() or "standard"
         limit = self.bot.config.max_filters_per_user
@@ -171,7 +181,10 @@ class WatchCog(commands.Cog):
             return
 
         count = snap_to_current(
-            self.bot.store, record, servers, self.bot.config.vat_percent
+            self.bot.store,
+            record,
+            servers,
+            self.bot.vat_for(interaction.user.id),
         )
         if record.delivery == "dm":
             zustellung = "Zustellung per DM"

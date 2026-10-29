@@ -65,11 +65,13 @@ die Bestellseite existiert nicht.
 
 ## Preise: netto und brutto
 
-Die Börse liefert **Nettopreise**. Mit `VAT_PERCENT` (z. B. `19`) zeigt das Embed
-zusätzlich brutto: `brutto: 46,41 €/Monat (inkl. 19 % MwSt.)`.
+Die Börse liefert **Nettopreise**. Jede Person setzt ihren Steuersatz einmal mit
+`/watch steuer:19` oder später mit `/steuer prozent:19`.
 
-`max_price` vergleicht dann gegen den **Bruttopreis** — man denkt in dem, was man
-zahlt. Ohne `VAT_PERCENT` bleibt alles netto, wie in der Quelle.
+- `/matches` und DMs zeigen **brutto** als Hauptzahl, netto in Klammern.
+- Im Kanal steht netto, darunter brutto für die Sätze der beteiligten Personen
+  (maximal zwei Zeilen).
+- `max_price` vergleicht gegen brutto, sobald ein Satz gesetzt ist.
 
 ## Wann gepostet wird
 

@@ -103,3 +103,27 @@ def test_baselined_same_price_is_not_posted(make_server, make_filter):
         lambda g, s: Decimal("45"),
     )
     assert out == []
+
+
+def test_candidate_carries_the_vat_rates_of_matching_users(make_server, make_filter):
+    out = find_candidates(
+        [make_server()],
+        [make_filter(id=1, user=2), make_filter(id=2, user=3)],
+        lambda f, s: False,
+        lambda g, s: None,
+        None,
+        lambda uid: {2: 19.0, 3: 20.0}[uid],
+    )
+    assert out[0].vat_rates == (19.0, 20.0)
+
+
+def test_identical_vat_rates_are_listed_once(make_server, make_filter):
+    out = find_candidates(
+        [make_server()],
+        [make_filter(id=1, user=2), make_filter(id=2, user=3)],
+        lambda f, s: False,
+        lambda g, s: None,
+        None,
+        lambda uid: 19.0,
+    )
+    assert out[0].vat_rates == (19.0,)

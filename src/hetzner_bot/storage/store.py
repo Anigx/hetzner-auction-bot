@@ -232,6 +232,27 @@ class Store:
         )
         self._db.commit()
 
+    # -- Benutzereinstellungen --------------------------------------------
+
+    def set_user_vat(self, user_id: int, percent: float) -> None:
+        self._db.execute(
+            """
+            INSERT INTO user_settings (user_id, vat_percent, updated_at)
+            VALUES (?, ?, datetime('now'))
+            ON CONFLICT(user_id) DO UPDATE SET
+                vat_percent = excluded.vat_percent,
+                updated_at = excluded.updated_at
+            """,
+            (user_id, float(percent)),
+        )
+        self._db.commit()
+
+    def get_user_vat(self, user_id: int) -> float | None:
+        row = self._db.execute(
+            "SELECT vat_percent FROM user_settings WHERE user_id = ?", (user_id,)
+        ).fetchone()
+        return None if row is None else float(row["vat_percent"])
+
     # -- Warteschlange ----------------------------------------------------
 
     def enqueue(self, guild_id: int, server_id: int, filter_ids: Sequence[int]) -> None:

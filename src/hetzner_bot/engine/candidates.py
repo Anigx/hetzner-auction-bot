@@ -21,6 +21,7 @@ class DmCandidate:
     filter_id: int
     server: Server
     previous_price: Decimal | None
+    vat_percent: float = 0
 
 
 def find_candidates(
@@ -29,7 +30,7 @@ def find_candidates(
     is_seen: Callable[[int, int], bool],
     last_price: Callable[[int, int], Decimal | None],
     baseline_price: Callable[[int, int], Decimal | None] | None = None,
-    vat_percent: float = 0,
+    vat_for: Callable[[int], float] | None = None,
 ) -> list[Candidate]:
     """Ermittelt pro Guild, welche Server gepostet werden müssen.
 
@@ -39,6 +40,7 @@ def find_candidates(
       den Baseline-Preis fällt, auch wenn kein Post vorher im Kanal stand.
     """
     baseline_of = baseline_price or (lambda _guild, _server: None)
+    vat_of = vat_for or (lambda _user: 0.0)
 
     by_guild: dict[int, list[FilterRecord]] = {}
     for record in filters:
@@ -53,7 +55,7 @@ def find_candidates(
             continue
 
         for server in servers:
-            eligible = [record for record in active if matches(record.criteria, server, vat_percent)]
+            eligible = [record for record in active if matches(record.criteria, server, vat_of(record.user_id))]
             if not eligible:
                 continue
 
@@ -79,6 +81,15 @@ def find_candidates(
                         sorted({record.user_id for record in eligible if record.mention})
                     ),
                     previous_price=previous,
+                    vat_rates=tuple(
+                        sorted(
+                            {
+                                rate
+                                for rate in (vat_of(record.user_id) for record in eligible)
+                                if rate and rate > 0
+                            }
+                        )[:2]
+                    ),
                 )
             )
 
@@ -91,19 +102,21 @@ def find_dm_candidates(
     filters: Sequence[FilterRecord],
     is_seen: Callable[[int, int], bool],
     last_dm_price: Callable[[int, int], Decimal | None],
-    vat_percent: float = 0,
+    vat_for: Callable[[int], float] | None = None,
 ) -> list[DmCandidate]:
     """Treffer fuer Filter, die per DM zugestellt werden — Dedupe pro Filter.
 
     Baseline gilt wie im Kanal: beim Anlegen gesehene Server werden nicht noch
     einmal geschickt, es sei denn der Preis faellt unter den Baseline-Preis.
     """
+    vat_of = vat_for or (lambda _user: 0.0)
     out: list[DmCandidate] = []
     for record in filters:
         if record.delivery != "dm" or not record.active:
             continue
+        vat = vat_of(record.user_id)
         for server in servers:
-            if not matches(record.criteria, server, vat_percent):
+            if not matches(record.criteria, server, vat):
                 continue
 
             previous = last_dm_price(record.id, server.id)
@@ -119,6 +132,7 @@ def find_dm_candidates(
                     filter_id=record.id,
                     server=server,
                     previous_price=previous,
+                    vat_percent=vat,
                 )
             )
 

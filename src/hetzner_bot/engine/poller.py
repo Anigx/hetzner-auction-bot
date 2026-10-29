@@ -48,7 +48,7 @@ class Poller:
         self.config = config
         self._fetch = fetch
         self.max_posts = max_posts or (getattr(config, "max_posts_per_run", 15))
-        self._vat = getattr(config, "vat_percent", 0)
+        self._default_vat = getattr(config, "vat_percent", 0)
         self.consecutive_failures = 0
         self._alerted = False
 
@@ -91,7 +91,7 @@ class Poller:
             self.store.is_seen,
             self.store.last_price,
             self.store.baseline_price,
-            self._vat,
+            self._vat_for,
         )
 
         unique: list[Candidate] = []
@@ -179,7 +179,7 @@ class Poller:
         try:
             await channel.send(
                 content=mention_prefix(candidate.user_ids) or None,
-                embed=build_embed(server, candidate.previous_price, self._vat),
+                embed=build_embed(server, candidate.previous_price, candidate.vat_rates),
             )
         except Exception as exc:  # noqa: BLE001 - ein kaputter Kanal darf den Lauf nicht toeten
             self.bot.last_error = f"Zustellung an Guild {guild_id} fehlgeschlagen: {exc}"
@@ -194,7 +194,7 @@ class Poller:
     async def _deliver_dms(self, servers, filters, limit: int) -> int:
         """Zustellung an Personen, die ihre Treffer per DM wollen."""
         candidates = find_dm_candidates(
-            servers, filters, self.store.is_seen, self.store.last_dm_price, self._vat
+            servers, filters, self.store.is_seen, self.store.last_dm_price, self._vat_for
         )
         sent = 0
         for candidate in candidates[:limit]:
@@ -203,7 +203,7 @@ class Poller:
                 if user is None:
                     user = await self.bot.fetch_user(candidate.user_id)
                 await user.send(
-                    embed=build_embed(candidate.server, candidate.previous_price, self._vat)
+                    embed=build_embed(candidate.server, candidate.previous_price, (candidate.vat_percent,), gross_first=True)
                 )
             except Exception as exc:  # noqa: BLE001 - geschlossene DMs duerfen nichts kippen
                 log.warning(
@@ -261,6 +261,11 @@ class Poller:
         if inspect.isawaitable(result):
             return await result
         return result
+
+    def _vat_for(self, user_id: int) -> float:
+        """Steuersatz der Person, sonst der Standard aus der Konfiguration."""
+        stored = self.store.get_user_vat(user_id)
+        return self._default_vat if stored is None else stored
 
     def _write_heartbeat(self) -> None:
         """Schreibt den Zeitpunkt des letzten erfolgreichen Polls fuer den Healthcheck."""

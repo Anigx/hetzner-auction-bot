@@ -56,3 +56,9 @@ CREATE TABLE IF NOT EXISTS queue (
     attempts     INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (guild_id, server_id)
 );
+
+CREATE TABLE IF NOT EXISTS user_settings (
+    user_id     INTEGER PRIMARY KEY,
+    vat_percent REAL NOT NULL DEFAULT 0,
+    updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);

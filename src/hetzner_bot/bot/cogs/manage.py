@@ -28,6 +28,42 @@ class ManageCog(commands.Cog):
         await interaction.response.send_message(HELP_TEXT, ephemeral=True)
 
     @app_commands.command(
+        name="steuer", description="Steuersatz fuer die Brutto-Anzeige setzen."
+    )
+    @app_commands.describe(prozent="Steuersatz in Prozent, z. B. 19. Ohne Angabe nur anzeigen.")
+    async def steuer(
+        self, interaction: discord.Interaction, prozent: float | None = None
+    ) -> None:
+        if prozent is None:
+            current = self.bot.store.get_user_vat(interaction.user.id)
+            if current is None:
+                text = (
+                    f"Du hast keinen eigenen Satz gesetzt — es gilt der Standard "
+                    f"({self.bot.config.vat_percent:g} %)."
+                )
+            else:
+                text = f"Dein Steuersatz: {current:g} %."
+            text += (
+                "\nBeispiele: `DE 19`, `AT 20`, `CH 8,1`, `NL 21`, `FR 20`, `IT 22`."
+                "\nSetzen mit `/steuer prozent:19`, abschalten mit `/steuer prozent:0`."
+            )
+            await interaction.response.send_message(text, ephemeral=True)
+            return
+
+        if not 0 <= prozent <= 100:
+            await interaction.response.send_message(
+                "Der Steuersatz muss zwischen 0 und 100 liegen.", ephemeral=True
+            )
+            return
+
+        self.bot.store.set_user_vat(interaction.user.id, prozent)
+        if prozent == 0:
+            text = "Steuersatz entfernt — Preise werden wieder netto angezeigt."
+        else:
+            text = f"Steuersatz auf {prozent:g} % gesetzt. Preise erscheinen jetzt brutto."
+        await interaction.response.send_message(text, ephemeral=True)
+
+    @app_commands.command(
         name="matches", description="Zeigt Server, die gerade zu deinen Filtern passen."
     )
     async def matches_cmd(self, interaction: discord.Interaction) -> None:
@@ -55,11 +91,12 @@ class ManageCog(commands.Cog):
             )
             return
 
+        vat = self.bot.vat_for(interaction.user.id)
         hits = {
             server.id: server
             for record in records
             for server in servers
-            if matches(record.criteria, server, self.bot.config.vat_percent)
+            if matches(record.criteria, server, self.bot.vat_for(record.user_id))
         }
         if not hits:
             await interaction.followup.send(
@@ -69,7 +106,7 @@ class ManageCog(commands.Cog):
 
         ordered = sorted(hits.values(), key=lambda s: (s.price_month_eur, s.id))
         lines = [f"**{len(ordered)} Server passen gerade:**"]
-        lines += [format_match_line(server) for server in ordered[:8]]
+        lines += [format_match_line(server, vat) for server in ordered[:8]]
         if len(ordered) > 8:
             lines.append(f"… und {len(ordered) - 8} weitere")
         await interaction.followup.send("\n".join(lines), ephemeral=True)
@@ -92,7 +129,12 @@ class ManageCog(commands.Cog):
         servers = self.bot.last_servers
         lines = [
             describe_filter(
-                record, sum(1 for server in servers if matches(record.criteria, server, self.bot.config.vat_percent))
+                record,
+                sum(
+                    1
+                    for server in servers
+                    if matches(record.criteria, server, self.bot.vat_for(record.user_id))
+                ),
             )
             for record in records
         ]

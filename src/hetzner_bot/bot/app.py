@@ -80,6 +80,11 @@ class HetznerBot(commands.Bot):
         self.tree.copy_global_to(guild=guild)
         return await self.tree.sync(guild=guild)
 
+    def vat_for(self, user_id: int) -> float:
+        """Steuersatz einer Person; ohne eigene Einstellung der Standard aus der Env."""
+        stored = self.store.get_user_vat(user_id)
+        return self.config.vat_percent if stored is None else stored
+
     async def current_servers(self) -> list[Server]:
         """Snapshot aus dem letzten Poll; holt einmal frisch, wenn noch keiner da ist."""
         if self.last_servers:

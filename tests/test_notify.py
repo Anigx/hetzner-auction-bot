@@ -42,11 +42,24 @@ def test_embed_links_directly_to_the_server():
 
 
 def test_embed_shows_gross_price_with_vat():
-    embed = build_embed(SERVER, None, vat_percent=19)
+    embed = build_embed(SERVER, None, vat_rates=(19,))
     price = field_text(embed, "Preis")
     assert "39" in price          # netto
     assert "46,41 €" in price     # brutto
     assert "19 %" in price
+
+
+def test_embed_can_show_two_tax_rates():
+    price = field_text(build_embed(SERVER, None, vat_rates=(19, 20)), "Preis")
+    assert "46,41 €" in price
+    assert "46,80 €" in price
+    assert "20 %" in price
+
+
+def test_embed_can_lead_with_the_gross_price():
+    price = field_text(build_embed(SERVER, None, vat_rates=(19,), gross_first=True), "Preis")
+    assert price.startswith("**46,41 €/Monat brutto**")
+    assert "netto: 39" in price
 
 
 def test_embed_without_vat_has_no_gross_line():

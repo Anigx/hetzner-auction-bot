@@ -76,6 +76,7 @@ async def test_all_commands_are_registered(tmp_path):
         "status",
         "help",
         "matches",
+        "steuer",
     } <= names
 
     setup = bot.tree.get_command("setup")

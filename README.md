@@ -57,10 +57,11 @@ Besitzer und Rechte aus dem Image.
 ```
 /setup channel:#server-deals     # einmalig, braucht "Server verwalten"
 /help                            # Befehle, Filter und Zustellung erklaert
-/watch max_price:100 min_ram:64 min_cores:8 mention:true
+/watch max_price:100 min_ram:64 min_cores:8 mention:true steuer:19
 /watch name:ryzen cpu:"Ryzen 9" min_disk:2 disk_type:nvme mention:true
-/watch name:privat max_price:120 delivery:dm
+/watch name:privat max_price:120 delivery:dm steuer:19
 /matches                         # was gerade passt, mit Direktlink
+/steuer prozent:20               # Steuersatz nachträglich ändern
 /filters
 /pause name:standard
 /resume name:standard

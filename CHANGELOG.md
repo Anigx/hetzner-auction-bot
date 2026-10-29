@@ -7,6 +7,9 @@ Alle nennenswerten Änderungen an diesem Projekt. Format nach
 ## [Unreleased]
 
 ### Hinzugefügt
+- 2026-10-29 (v0.5.0): Steuersatz pro Person (`/watch steuer:19`, `/steuer`).
+  `/matches` und DMs zeigen brutto als Hauptpreis, der Kanal netto plus brutto der
+  Beteiligten.
 - 2026-10-29 (v0.4.0): `VAT_PERCENT` zeigt den Bruttopreis im Embed und lässt
   `max_price` gegen brutto prüfen. Command-Sync blockiert den Start nicht mehr
   (30-s-Timeout, Polling startet zuerst), bei `GUILD_ID` wird sofort guild-scoped

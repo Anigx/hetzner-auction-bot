@@ -32,23 +32,42 @@ def _disk_summary(server: Server) -> str:
     return ", ".join(parts) if parts else "–"
 
 
-def _price_text(server: Server, previous_price: Decimal | None, vat_percent: float = 0) -> str:
-    current = (
-        f"{server.price_month_eur} €/Monat · "
-        f"{server.price_hour_eur} €/Std · Setup {server.setup_eur} €"
-    )
-    if previous_price is not None and previous_price > server.price_month_eur:
+def _price_text(
+    server: Server,
+    previous_price: Decimal | None,
+    vat_rates: Sequence[float] = (),
+    gross_first: bool = False,
+) -> str:
+    net = server.price_month_eur
+    rate = vat_rates[0] if vat_rates else 0.0
+    gross = with_vat(net, rate) if rate else net
+    tail = f"{server.price_hour_eur} €/Std · Setup {server.setup_eur} €"
+
+    if gross_first and rate:
+        text = f"**{format_eur(gross)}/Monat brutto** · {tail}"
+        if previous_price is not None and previous_price > net:
+            text = f"vorher ~~{format_eur(with_vat(previous_price, rate))}~~ → " + text
+        return text + f"\nnetto: {net} €/Monat ({rate:g} % MwSt.)"
+
+    current = f"{net} €/Monat · {tail}"
+    if previous_price is not None and previous_price > net:
         text = f"vorher ~~{previous_price} €~~ → jetzt **{current}**"
     else:
         text = current
-    if vat_percent and vat_percent > 0:
-        gross = with_vat(server.price_month_eur, vat_percent)
-        text += f"\nbrutto: **{format_eur(gross)}/Monat** (inkl. {vat_percent:g} % MwSt.)"
+
+    for shown in list(vat_rates)[:2]:
+        text += (
+            f"\nbrutto: **{format_eur(with_vat(net, shown))}/Monat** "
+            f"({shown:g} % MwSt.)"
+        )
     return text
 
 
 def build_embed(
-    server: Server, previous_price: Decimal | None = None, vat_percent: float = 0
+    server: Server,
+    previous_price: Decimal | None = None,
+    vat_rates: Sequence[float] = (),
+    gross_first: bool = False,
 ) -> discord.Embed:
     cores = cores_for(server.cpu_name)
     ram = f"{server.ram_gb} GB" + (" ECC" if server.ecc else "")
@@ -75,7 +94,7 @@ def build_embed(
         value=f"[In der Serverbörse öffnen]({server_url(server.id)})",
         inline=True,
     )
-    embed.add_field(name="Preis", value=_price_text(server, previous_price, vat_percent), inline=False)
+    embed.add_field(name="Preis", value=_price_text(server, previous_price, vat_rates, gross_first), inline=False)
     embed.set_footer(text=f"Hetzner Serverbörse · ID {server.id}")
     return embed
 

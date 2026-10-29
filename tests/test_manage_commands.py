@@ -54,3 +54,10 @@ def test_match_line_contains_direct_link(make_server):
     assert "3101875" in line
     assert "https://www.hetzner.com/sb/?freetext=3101875" in line
     assert "39" in line
+
+
+def test_match_line_shows_gross_price_first(make_server):
+    line = format_match_line(make_server(price="39"), vat_percent=19)
+    assert "46,41" in line
+    assert "brutto" in line
+    assert "netto" in line

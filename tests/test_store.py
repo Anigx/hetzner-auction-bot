@@ -75,3 +75,11 @@ def test_dm_price_history_is_per_filter(store):
     store.record_dm_post(7, 10, Decimal("45"))
     assert store.last_dm_price(7, 10) == Decimal("45")
     assert store.last_dm_price(8, 10) is None
+
+
+def test_user_vat_roundtrip(store):
+    assert store.get_user_vat(1) is None
+    store.set_user_vat(1, 19)
+    assert store.get_user_vat(1) == 19
+    store.set_user_vat(1, 8.1)
+    assert store.get_user_vat(1) == 8.1

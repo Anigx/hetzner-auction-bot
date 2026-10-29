@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 from hetzner_bot.delivery import server_url
 from hetzner_bot.domain import Criteria, FilterRecord, Server
+from hetzner_bot.pricing import format_eur, with_vat
 
 BERLIN = ZoneInfo("Europe/Berlin")
 
@@ -58,11 +59,18 @@ def channel_warning(channel_id: int | None) -> str | None:
     return None
 
 
-def format_match_line(server: Server) -> str:
-    """Eine Zeile für /matches — mit Direktlink auf den Server."""
+def format_match_line(server: Server, vat_percent: float = 0) -> str:
+    """Eine Zeile für /matches — brutto (falls Steuersatz gesetzt), mit Direktlink."""
+    net = server.price_month_eur
+    if vat_percent and vat_percent > 0:
+        price = f"**{format_eur(with_vat(net, vat_percent))}/Monat** brutto"
+        details = f"netto {net} €"
+    else:
+        price = f"**{net} €/Monat**"
+        details = "netto"
     return (
-        f"**{server.cpu_name}** · {server.ram_gb} GB RAM · "
-        f"{server.storage_total_gb} GB Platten · {server.price_month_eur} €/Monat — "
+        f"{price} · {server.cpu_name} · {server.ram_gb} GB RAM · "
+        f"{server.storage_total_gb} GB Platten ({details}) — "
         f"[ID {server.id}]({server_url(server.id)})"
     )
 
@@ -79,6 +87,7 @@ zu deinen Filtern passen.
 `/pause` · `/resume` — Filter pausieren oder wieder anschalten
 `/unwatch` — Filter löschen
 `/status` — Zustand des Bots
+`/steuer` — Steuersatz für die Brutto-Anzeige (z. B. 19)
 `/setup` — Zielkanal festlegen (nur Server-Verwaltung)
 
 **Filter** (mindestens eins nötig)
@@ -91,8 +100,9 @@ zu deinen Filtern passen.
 `delivery:dm` — Treffer kommen nur dir als Direktnachricht, nichts geht in den Kanal.
 
 **Preise**
-Angezeigt wird der Nettopreis der Börse; ist ein Steuersatz hinterlegt \
-(`VAT_PERCENT`), zusätzlich brutto. `max_price` vergleicht dann den Bruttopreis.
+Im Kanal siehst du netto und, je nach Land der Beteiligten, brutto. In `/matches`
+und per DM ist brutto die Hauptzahl. `max_price` vergleicht brutto, wenn ein Satz
+gesetzt ist. Deinen Satz setzt du mit `/watch steuer:19` oder `/steuer prozent:19`.
 
 **Beim Anlegen** bekommst du nur eine Zahl: was jetzt schon passt, wird nicht \
 gepostet. Danach melde ich neue Server und Preisfälle."""
