@@ -2,15 +2,22 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
+
+import httpx
 
 from hetzner.models import Server
 
 AUCTION_URL = "https://www.hetzner.com/_resources/app/data/app/live_data_sb.json"
 
 _LOCATIONS = {"FSN", "NBG", "HEL"}
+
+
+class FetchError(RuntimeError):
+    """Die Auktionsdaten konnten nicht geholt werden."""
 
 
 def _as_dict(value: Any) -> dict[str, Any]:
@@ -86,3 +93,33 @@ def parse_servers(payload: dict[str, Any]) -> list[Server]:
     if not isinstance(raw_servers, list):
         return []
     return [_parse_server(item) for item in raw_servers if isinstance(item, dict)]
+
+
+async def fetch_servers(
+    client: httpx.AsyncClient,
+    url: str = AUCTION_URL,
+    retries: int = 3,
+    backoff: float = 1.0,
+) -> list[Server]:
+    """Holt die Auktionsdaten mit Retry und exponentiellem Backoff."""
+    if retries < 1:
+        raise ValueError("retries muss mindestens 1 sein")
+
+    last_error = "unbekannt"
+    for attempt in range(retries):
+        try:
+            response = await client.get(url)
+            if response.status_code == 200:
+                return parse_servers(response.json())
+            last_error = f"HTTP {response.status_code}"
+        except httpx.HTTPError as exc:
+            last_error = f"{type(exc).__name__}: {exc}"
+        except ValueError as exc:
+            last_error = f"ungueltiges JSON: {exc}"
+
+        if attempt < retries - 1 and backoff > 0:
+            await asyncio.sleep(backoff * (2**attempt))
+
+    raise FetchError(
+        f"Hetzner-Auktion nicht erreichbar nach {retries} Versuchen: {last_error}"
+    )
