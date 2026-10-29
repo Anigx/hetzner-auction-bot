@@ -21,6 +21,11 @@ Alle nennenswerten Änderungen an diesem Projekt. Format nach
   (`docs/superpowers/specs/2026-10-29-hetzner-auktion-discord-bot-design.md`).
 
 ### Behoben
+- 2026-10-29 (v0.2.3): `/setup` brach ab, wenn man eine Kategorie statt eines
+  Textkanals wählte (`TransformerError`). Jetzt wird der Kanaltyp geprüft und
+  verständlich geantwortet; ohne Argument nimmt `/setup` den aktuellen Kanal.
+  Dazu End-to-End-Tests über die echte Fixture und ein Test, der alle Commands
+  registriert.
 - 2026-10-29 (v0.2.2): Startabbruch im Container mit
   `AttributeError: 'NoneType' object has no attribute 'loop'`. Ursache: `HetznerBot`
   überschrieb `self.http`, das in `discord.py` der interne HTTP-Client ist. Der

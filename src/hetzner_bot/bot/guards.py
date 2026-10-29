@@ -20,3 +20,14 @@ def resolve_guild_id(interaction: discord.Interaction) -> int:
     if permissions is None or not permissions.manage_guild:
         raise PermissionError("Dafuer brauchst du das Recht 'Server verwalten'.")
     return guild_id
+
+
+def ensure_messageable(channel) -> None:
+    """Prüft, ob in den Kanal wirklich gepostet werden kann."""
+    if getattr(channel, "type", None) is discord.ChannelType.category:
+        raise ValueError(
+            "Das ist eine Kategorie, kein Kanal. Bitte einen Textkanal waehlen, "
+            "z.B. `/setup channel:#deals`."
+        )
+    if not hasattr(channel, "send"):
+        raise ValueError("In diesen Kanal kann der Bot keine Nachrichten schreiben.")

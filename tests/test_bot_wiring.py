@@ -39,3 +39,29 @@ async def test_bot_setup_hook_runs_without_network(tmp_path):
     assert bot.auction_http is not None
     assert bot.cogs, "keine Cog geladen"
     await bot.close()
+
+
+@pytest.mark.asyncio
+async def test_all_commands_are_registered(tmp_path):
+    """Faengt Annotationsfehler (z.B. Optional[AppCommandChannel]) beim Registrieren."""
+    bot = HetznerBot(build_config(tmp_path))
+    await bot._async_setup_hook()
+    await bot.setup_hook()
+
+    names = {command.name for command in bot.tree.get_commands()}
+    assert {
+        "setup",
+        "watch",
+        "filters",
+        "unwatch",
+        "pause",
+        "resume",
+        "status",
+    } <= names
+
+    setup = bot.tree.get_command("setup")
+    params = {param.name: param for param in setup.parameters}
+    assert "channel" in params
+    assert params["channel"].required is False
+
+    await bot.close()

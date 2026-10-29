@@ -81,7 +81,7 @@ sehen.
 ## Beispiele
 
 ```
-/watch max_price:50 min_ram:64 min_cores:16 mention:true
+/watch max_price:100 min_ram:64 min_cores:8 mention:true
 /watch name:ryzen cpu:"Ryzen 9" min_disk:2 disk_type:nvme mention:true
 /watch name:storage min_disk:8 disk_type:hdd location:FSN no_setup:true
 ```

@@ -49,7 +49,7 @@ Besitzer und Rechte aus dem Image.
 
 ```
 /setup channel:#server-deals     # einmalig, braucht "Server verwalten"
-/watch max_price:50 min_ram:64 min_cores:16 mention:true
+/watch max_price:100 min_ram:64 min_cores:8 mention:true
 /watch name:ryzen cpu:"Ryzen 9" min_disk:2 disk_type:nvme mention:true
 /filters
 /pause name:standard
