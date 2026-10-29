@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 import discord
@@ -43,13 +44,13 @@ class HetznerBot(commands.Bot):
             await self.add_cog(cog(self))
 
     async def on_ready(self) -> None:
-        await self.tree.sync()
         log.info("Eingeloggt als %s", self.user)
         guild_count = len(self.guilds)
         log.info("Mitglied in %s Server(n)", guild_count)
         warning = guild_count_warning(guild_count)
         if warning:
             log.warning(warning)
+
         if self.config.guild_id is not None:
             if self.get_guild(self.config.guild_id) is None:
                 log.error(
@@ -59,8 +60,25 @@ class HetznerBot(commands.Bot):
                 )
             else:
                 log.info("Fest gebunden an Server %s", self.config.guild_id)
+
+        # Erst pollen, dann Commands synchronisieren: ein haengender Sync darf den
+        # Betrieb nicht aufhalten.
         if not self.poll_loop.is_running():
             self.poll_loop.start()
+
+        try:
+            synced = await asyncio.wait_for(self._sync_commands(), timeout=30)
+            log.info("%s Commands synchronisiert", len(synced))
+        except Exception as exc:  # noqa: BLE001 - Sync-Fehler duerfen nichts kippen
+            log.warning("Command-Sync fehlgeschlagen: %s", exc)
+
+    async def _sync_commands(self):
+        if self.config.guild_id is None:
+            return await self.tree.sync()
+        # Guild-Sync ist sofort verfuegbar; global kann bis zu einer Stunde dauern.
+        guild = discord.Object(id=self.config.guild_id)
+        self.tree.copy_global_to(guild=guild)
+        return await self.tree.sync(guild=guild)
 
     async def current_servers(self) -> list[Server]:
         """Snapshot aus dem letzten Poll; holt einmal frisch, wenn noch keiner da ist."""

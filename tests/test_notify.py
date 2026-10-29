@@ -39,3 +39,15 @@ def test_embed_links_directly_to_the_server():
     embed = build_embed(SERVER, None)
     assert embed.url == "https://www.hetzner.com/sb/?freetext=3101875"
     assert "freetext=3101875" in field_text(embed, "Zum Server")
+
+
+def test_embed_shows_gross_price_with_vat():
+    embed = build_embed(SERVER, None, vat_percent=19)
+    price = field_text(embed, "Preis")
+    assert "39" in price          # netto
+    assert "46,41 €" in price     # brutto
+    assert "19 %" in price
+
+
+def test_embed_without_vat_has_no_gross_line():
+    assert "brutto" not in field_text(build_embed(SERVER, None), "Preis")

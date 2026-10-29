@@ -25,6 +25,7 @@ class Config:
     max_filters_per_user: int
     log_level: str
     guild_id: int | None = None
+    vat_percent: float = 0.0
 
 
 def _positive_int(env: Mapping[str, str], key: str, default: int) -> int:
@@ -53,6 +54,19 @@ def _optional_int(env: Mapping[str, str], key: str) -> int | None:
     return value
 
 
+def _percent(env: Mapping[str, str], key: str, default: float = 0.0) -> float:
+    raw = (env.get(key) or "").strip()
+    if not raw:
+        return default
+    try:
+        value = float(raw.replace(",", "."))
+    except ValueError:
+        raise ConfigError(f"{key} muss eine Zahl sein, war: {raw!r}") from None
+    if not 0 <= value <= 100:
+        raise ConfigError(f"{key} muss zwischen 0 und 100 liegen, war: {value}")
+    return value
+
+
 def load_config(env: Mapping[str, str] | None = None) -> Config:
     values = os.environ if env is None else env
 
@@ -73,4 +87,5 @@ def load_config(env: Mapping[str, str] | None = None) -> Config:
         max_filters_per_user=_positive_int(values, "MAX_FILTERS_PER_USER", 5),
         log_level=log_level,
         guild_id=_optional_int(values, "GUILD_ID"),
+        vat_percent=_percent(values, "VAT_PERCENT"),
     )

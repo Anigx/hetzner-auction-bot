@@ -48,6 +48,7 @@ class Poller:
         self.config = config
         self._fetch = fetch
         self.max_posts = max_posts or (getattr(config, "max_posts_per_run", 15))
+        self._vat = getattr(config, "vat_percent", 0)
         self.consecutive_failures = 0
         self._alerted = False
 
@@ -90,6 +91,7 @@ class Poller:
             self.store.is_seen,
             self.store.last_price,
             self.store.baseline_price,
+            self._vat,
         )
 
         unique: list[Candidate] = []
@@ -177,7 +179,7 @@ class Poller:
         try:
             await channel.send(
                 content=mention_prefix(candidate.user_ids) or None,
-                embed=build_embed(server, candidate.previous_price),
+                embed=build_embed(server, candidate.previous_price, self._vat),
             )
         except Exception as exc:  # noqa: BLE001 - ein kaputter Kanal darf den Lauf nicht toeten
             self.bot.last_error = f"Zustellung an Guild {guild_id} fehlgeschlagen: {exc}"
@@ -192,7 +194,7 @@ class Poller:
     async def _deliver_dms(self, servers, filters, limit: int) -> int:
         """Zustellung an Personen, die ihre Treffer per DM wollen."""
         candidates = find_dm_candidates(
-            servers, filters, self.store.is_seen, self.store.last_dm_price
+            servers, filters, self.store.is_seen, self.store.last_dm_price, self._vat
         )
         sent = 0
         for candidate in candidates[:limit]:
@@ -201,7 +203,7 @@ class Poller:
                 if user is None:
                     user = await self.bot.fetch_user(candidate.user_id)
                 await user.send(
-                    embed=build_embed(candidate.server, candidate.previous_price)
+                    embed=build_embed(candidate.server, candidate.previous_price, self._vat)
                 )
             except Exception as exc:  # noqa: BLE001 - geschlossene DMs duerfen nichts kippen
                 log.warning(

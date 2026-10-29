@@ -9,6 +9,7 @@ import discord
 
 from hetzner_bot.auction.cpus import cores_for
 from hetzner_bot.domain import Server
+from hetzner_bot.pricing import format_eur, with_vat
 
 BRAND_COLOR = 0x00A88F
 AUCTION_URL = "https://www.hetzner.com/sb/"
@@ -31,17 +32,24 @@ def _disk_summary(server: Server) -> str:
     return ", ".join(parts) if parts else "–"
 
 
-def _price_text(server: Server, previous_price: Decimal | None) -> str:
+def _price_text(server: Server, previous_price: Decimal | None, vat_percent: float = 0) -> str:
     current = (
         f"{server.price_month_eur} €/Monat · "
         f"{server.price_hour_eur} €/Std · Setup {server.setup_eur} €"
     )
     if previous_price is not None and previous_price > server.price_month_eur:
-        return f"vorher ~~{previous_price} €~~ → jetzt **{current}**"
-    return current
+        text = f"vorher ~~{previous_price} €~~ → jetzt **{current}**"
+    else:
+        text = current
+    if vat_percent and vat_percent > 0:
+        gross = with_vat(server.price_month_eur, vat_percent)
+        text += f"\nbrutto: **{format_eur(gross)}/Monat** (inkl. {vat_percent:g} % MwSt.)"
+    return text
 
 
-def build_embed(server: Server, previous_price: Decimal | None = None) -> discord.Embed:
+def build_embed(
+    server: Server, previous_price: Decimal | None = None, vat_percent: float = 0
+) -> discord.Embed:
     cores = cores_for(server.cpu_name)
     ram = f"{server.ram_gb} GB" + (" ECC" if server.ecc else "")
 
@@ -67,7 +75,7 @@ def build_embed(server: Server, previous_price: Decimal | None = None) -> discor
         value=f"[In der Serverbörse öffnen]({server_url(server.id)})",
         inline=True,
     )
-    embed.add_field(name="Preis", value=_price_text(server, previous_price), inline=False)
+    embed.add_field(name="Preis", value=_price_text(server, previous_price, vat_percent), inline=False)
     embed.set_footer(text=f"Hetzner Serverbörse · ID {server.id}")
     return embed
 

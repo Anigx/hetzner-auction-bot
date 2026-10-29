@@ -29,6 +29,7 @@ def find_candidates(
     is_seen: Callable[[int, int], bool],
     last_price: Callable[[int, int], Decimal | None],
     baseline_price: Callable[[int, int], Decimal | None] | None = None,
+    vat_percent: float = 0,
 ) -> list[Candidate]:
     """Ermittelt pro Guild, welche Server gepostet werden müssen.
 
@@ -52,7 +53,7 @@ def find_candidates(
             continue
 
         for server in servers:
-            eligible = [record for record in active if matches(record.criteria, server)]
+            eligible = [record for record in active if matches(record.criteria, server, vat_percent)]
             if not eligible:
                 continue
 
@@ -90,6 +91,7 @@ def find_dm_candidates(
     filters: Sequence[FilterRecord],
     is_seen: Callable[[int, int], bool],
     last_dm_price: Callable[[int, int], Decimal | None],
+    vat_percent: float = 0,
 ) -> list[DmCandidate]:
     """Treffer fuer Filter, die per DM zugestellt werden — Dedupe pro Filter.
 
@@ -101,7 +103,7 @@ def find_dm_candidates(
         if record.delivery != "dm" or not record.active:
             continue
         for server in servers:
-            if not matches(record.criteria, server):
+            if not matches(record.criteria, server, vat_percent):
                 continue
 
             previous = last_dm_price(record.id, server.id)

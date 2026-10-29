@@ -6,15 +6,16 @@ import logging
 
 from hetzner_bot.auction.cpus import cores_for
 from hetzner_bot.domain import Criteria, Server
+from hetzner_bot.pricing import with_vat
 
 log = logging.getLogger(__name__)
 
 _warned_unknown_cpus: set[str] = set()
 
 
-def matches(criteria: Criteria, server: Server) -> bool:
+def matches(criteria: Criteria, server: Server, vat_percent: float = 0) -> bool:
     """Prüft, ob ein Server alle gesetzten Kriterien erfüllt. Nicht gesetzte zählen nicht."""
-    if criteria.max_price is not None and server.price_month_eur > criteria.max_price:
+    if criteria.max_price is not None and with_vat(server.price_month_eur, vat_percent) > criteria.max_price:
         return False
 
     if criteria.min_ram is not None and server.ram_gb < criteria.min_ram:

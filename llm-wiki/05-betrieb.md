@@ -64,6 +64,7 @@ docker compose pull && docker compose up -d
 | `MAX_FILTERS_PER_USER` | `5` | Filter pro Person und Server |
 | `LOG_LEVEL` | `INFO` | Log-Schwelle |
 | `GUILD_ID` | – | optional: Bot arbeitet nur auf diesem Server |
+| `VAT_PERCENT` | `0` | Steuersatz für die Brutto-Anzeige (z. B. `19`) |
 | `AUCTION_URL` | Hetzner-URL | andere Datenquelle (Tests, Umzug) |
 | `LAST_POLL_FILE` | `data/last_poll` | Heartbeat für den Healthcheck |
 | `MAX_POLL_AGE_MINUTES` | `30` | ab wann der Healthcheck rot wird |

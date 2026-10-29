@@ -59,7 +59,7 @@ class ManageCog(commands.Cog):
             server.id: server
             for record in records
             for server in servers
-            if matches(record.criteria, server)
+            if matches(record.criteria, server, self.bot.config.vat_percent)
         }
         if not hits:
             await interaction.followup.send(
@@ -92,7 +92,7 @@ class ManageCog(commands.Cog):
         servers = self.bot.last_servers
         lines = [
             describe_filter(
-                record, sum(1 for server in servers if matches(record.criteria, server))
+                record, sum(1 for server in servers if matches(record.criteria, server, self.bot.config.vat_percent))
             )
             for record in records
         ]

@@ -63,6 +63,14 @@ Jeder Treffer verlinkt `https://www.hetzner.com/sb/?freetext=<ID>`. Die Auktions
 filtert per URL-Parameter auf genau diesen Server („1 results"), ein Deep-Link auf
 die Bestellseite existiert nicht.
 
+## Preise: netto und brutto
+
+Die Börse liefert **Nettopreise**. Mit `VAT_PERCENT` (z. B. `19`) zeigt das Embed
+zusätzlich brutto: `brutto: 46,41 €/Monat (inkl. 19 % MwSt.)`.
+
+`max_price` vergleicht dann gegen den **Bruttopreis** — man denkt in dem, was man
+zahlt. Ohne `VAT_PERCENT` bleibt alles netto, wie in der Quelle.
+
 ## Wann gepostet wird
 
 Pro Guild und Server:

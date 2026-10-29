@@ -7,6 +7,10 @@ Alle nennenswerten Änderungen an diesem Projekt. Format nach
 ## [Unreleased]
 
 ### Hinzugefügt
+- 2026-10-29 (v0.4.0): `VAT_PERCENT` zeigt den Bruttopreis im Embed und lässt
+  `max_price` gegen brutto prüfen. Command-Sync blockiert den Start nicht mehr
+  (30-s-Timeout, Polling startet zuerst), bei `GUILD_ID` wird sofort guild-scoped
+  synchronisiert.
 - 2026-10-29 (v0.3.1): `GUILD_ID` bindet den Bot fest an einen Server; Commands
   werden anderswo abgelehnt, das Log meldet die Bindung.
 - 2026-10-29 (v0.3.0): Direktlink pro Server

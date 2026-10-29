@@ -90,6 +90,10 @@ zu deinen Filtern passen.
 `delivery:kanal` (Standard) — Treffer gehen in den Kanal, mit `mention:true` wirst du getaggt.
 `delivery:dm` — Treffer kommen nur dir als Direktnachricht, nichts geht in den Kanal.
 
+**Preise**
+Angezeigt wird der Nettopreis der Börse; ist ein Steuersatz hinterlegt \
+(`VAT_PERCENT`), zusätzlich brutto. `max_price` vergleicht dann den Bruttopreis.
+
 **Beim Anlegen** bekommst du nur eine Zahl: was jetzt schon passt, wird nicht \
 gepostet. Danach melde ich neue Server und Preisfälle."""
 

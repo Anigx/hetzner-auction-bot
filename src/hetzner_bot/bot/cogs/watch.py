@@ -55,9 +55,13 @@ def build_criteria(
     return criteria
 
 
-def snap_to_current(store, record: FilterRecord, servers: Sequence[Server]) -> int:
+def snap_to_current(
+    store, record: FilterRecord, servers: Sequence[Server], vat_percent: float = 0
+) -> int:
     """Markiert alle aktuell passenden Server als gesehen und merkt sich ihren Preis."""
-    matching = [server for server in servers if matches(record.criteria, server)]
+    matching = [
+        server for server in servers if matches(record.criteria, server, vat_percent)
+    ]
     if matching:
         store.mark_seen(record.id, [server.id for server in matching])
         for server in matching:
@@ -166,7 +170,9 @@ class WatchCog(commands.Cog):
             )
             return
 
-        count = snap_to_current(self.bot.store, record, servers)
+        count = snap_to_current(
+            self.bot.store, record, servers, self.bot.config.vat_percent
+        )
         if record.delivery == "dm":
             zustellung = "Zustellung per DM"
         else:

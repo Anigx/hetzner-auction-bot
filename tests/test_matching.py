@@ -44,3 +44,10 @@ def test_ecc_and_all_criteria_together(make_server):
     both = Criteria(max_price=Decimal("50"), min_ram=64, min_cores=16, ecc="ja")
     assert matches(both, make_server()) is True
     assert matches(both, make_server(ram_gb=32)) is False
+
+
+def test_max_price_is_checked_against_gross_when_vat_is_set(make_server):
+    cheap = make_server(price="45")
+    assert matches(Criteria(max_price=Decimal("50")), cheap, 19) is False  # 53,55 €
+    assert matches(Criteria(max_price=Decimal("54")), cheap, 19) is True
+    assert matches(Criteria(max_price=Decimal("50")), cheap, 0) is True

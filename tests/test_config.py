@@ -37,3 +37,16 @@ def test_guild_id_is_optional():
 def test_config_rejects_non_numeric_guild_id():
     with pytest.raises(ConfigError):
         load_config({"DISCORD_TOKEN": "abc", "GUILD_ID": "dev"})
+
+
+def test_vat_percent_defaults_to_zero_and_parses():
+    assert load_config({"DISCORD_TOKEN": "abc"}).vat_percent == 0
+    assert load_config({"DISCORD_TOKEN": "abc", "VAT_PERCENT": "19"}).vat_percent == 19
+    assert load_config({"DISCORD_TOKEN": "abc", "VAT_PERCENT": "8,1"}).vat_percent == 8.1
+
+
+def test_vat_percent_must_be_a_sane_number():
+    with pytest.raises(ConfigError):
+        load_config({"DISCORD_TOKEN": "abc", "VAT_PERCENT": "viel"})
+    with pytest.raises(ConfigError):
+        load_config({"DISCORD_TOKEN": "abc", "VAT_PERCENT": "101"})
