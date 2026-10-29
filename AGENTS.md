@@ -1,88 +1,46 @@
-# AGENTS.md — Projekt-Wiki
+# AGENTS.md
 
-Einstiegspunkt für Menschen und LLM-Agenten, die an diesem Projekt arbeiten.
-Kurz, aktuell, ohne Ballast. Details stehen in den verlinkten Dateien.
+Kurzer Vertrag für Agenten. Das **Wissen** steht im Wiki: [`llm-wiki/`](llm-wiki/README.md).
 
 ## Was das ist
 
-Ein Discord-Bot, der die Hetzner-Serverbörse beobachtet und neue passende
-Server in einen gemeinsamen Discord-Kanal postet. Jede Person legt per
-Slash-Command eigene Filter an und entscheidet, ob sie bei Treffern getaggt
-werden will.
+Ein Discord-Bot, der die Hetzner-Serverbörse beobachtet und passende Server in
+einen Kanal postet. Python 3.12, `discord.py`, SQLite, Docker.
+Details: [01 — Überblick](llm-wiki/01-ueberblick.md).
 
-## Stand
+## Wo was steht
 
-Umgesetzt und getestet (74 Tests). Läuft lokal, Deployment auf einem VPS per
-Docker Compose steht noch aus.
-Siehe [Design](docs/superpowers/specs/2026-10-29-hetzner-auktion-discord-bot-design.md),
-[Plan](docs/superpowers/plans/2026-10-29-hetzner-auktion-discord-bot.md)
-und [TASKS.md](TASKS.md).
-
-## Wiki
-
-| Datei | Inhalt |
+| Frage | Datei |
 |---|---|
-| [AGENTS.md](AGENTS.md) | Einstieg, Konventionen, Regeln für Agenten |
-| [TASKS.md](TASKS.md) | Arbeitsliste, Phasen, offene Punkte |
-| [CHANGELOG.md](CHANGELOG.md) | Was sich wann geändert hat |
-| [docs/superpowers/specs/](docs/superpowers/specs/) | Design-Dokumente |
-| [docs/superpowers/plans/](docs/superpowers/plans/) | Umsetzungspläne |
+| Wie funktioniert es, welche Datei macht was? | [llm-wiki/02-architektur.md](llm-wiki/02-architektur.md) |
+| Woher kommen die Server, welche Fallstricke? | [llm-wiki/03-datenquelle.md](llm-wiki/03-datenquelle.md) |
+| Was bedeutet ein Filter genau? | [llm-wiki/04-filter.md](llm-wiki/04-filter.md) |
+| Container, Volume, Healthcheck, Updates | [llm-wiki/05-betrieb.md](llm-wiki/05-betrieb.md) |
+| Tests, Fixture, Release | [llm-wiki/06-entwicklung.md](llm-wiki/06-entwicklung.md) |
+| Was ist offen? | [TASKS.md](TASKS.md) |
+| Was ist passiert? | [CHANGELOG.md](CHANGELOG.md) |
+| Warum ist es so gebaut? | [Design](docs/superpowers/specs/2026-10-29-hetzner-auktion-discord-bot-design.md) |
 
-## Technik
+## Regeln
 
-- Python 3.12, `discord.py` 2.x, `httpx`, SQLite
-- Betrieb: Docker Compose auf einem VPS
-- Datenquelle: `https://www.hetzner.com/_resources/app/data/app/live_data_sb.json`
-  (öffentlich, kein Key, ein GET alle 10 Minuten)
-- Bot-Sprache: Deutsch
-
-## Geplante Struktur
-
-```
-bot.py              Start, Intents, Command-Registrierung
-hetzner/client.py   Fetch + Parsing in Dataclasses
-filters.py          Kriterien, Matching, Validierung
-store.py            SQLite-Zugriff
-notify.py           Embed-Bau, Pings, Posten
-config.py           Token, Intervall, Pfade aus Env
-tests/              Unit-Tests, Fixture der echten JSON-Antwort
-data/               SQLite-Volume (nicht im Repo)
-```
-
-## Konventionen
-
-- Deutsch in UI, Commits und Doku. Code-Bezeichner englisch.
-- Keine Secrets im Repo. `DISCORD_TOKEN` nur über `.env`, `.env` in
-  `.gitignore`, `.env.example` mit Platzhaltern.
-- Zeitangaben in UTC speichern, in Europe/Berlin anzeigen.
-- Preise in EUR als `Decimal`, nicht `float` — Cent-Differenzen entscheiden.
-- Jede Regel in `filters.py` bekommt einen Test. Fixture ist ein echter
-  JSON-Snapshot der Auktionsdatei.
-- Keine stillen Fehler: entweder Log mit Kontext oder eine Meldung im Discord.
-
-## Regeln für Agenten
-
-- Erst Design, dann Plan, dann Code. Änderungen am Verhalten zuerst im
-  Design-Dokument nachziehen.
-- `TASKS.md` ist die Wahrheit über den Fortschritt: Aufgabe abhaken, neue
-  Erkenntnisse als offenen Punkt eintragen.
-- Jede abgeschlossene Änderung mit Datum in `CHANGELOG.md`.
+- Erst Design, dann Plan, dann Code. Verhalten ändern heißt: Design und Wiki
+  nachziehen, nicht nur den Code.
+- `TASKS.md` ist die Wahrheit über den Fortschritt, `CHANGELOG.md` über die
+  Historie. Beides bei jeder Änderung pflegen.
 - Vor „fertig" die Tests laufen lassen und die Ausgabe zeigen.
-- Hetzner nicht häufiger als nötig abfragen. Im Betrieb 10 Minuten, beim
-  Entwickeln maximal ein Request pro Minute und nur gegen einen
-  Fixture-Snapshot, nicht live im Test.
+- Preise als `Decimal(str(...))`, Zeiten in UTC speichern und nur zur Anzeige
+  nach `Europe/Berlin`.
+- Keine Secrets im Repo. `DISCORD_TOKEN` nur in `.env`; `.env.example` pflegen.
+- Keine stillen Fehler: Log mit Kontext oder Meldung im Discord.
+- Hetzner nicht häufiger als nötig abfragen: im Betrieb 10 Minuten, beim
+  Entwickeln gegen die Fixture, nicht live.
 
-## Befehle (nach dem Gerüst)
+## Befehle
 
 ```bash
-python -m venv .venv && .venv/Scripts/activate   # Windows
-pip install -r requirements.txt
-python bot.py
-pytest
+uv venv --python 3.12 .venv
+uv pip install -r requirements.txt --python .venv/Scripts/python.exe
+.venv/Scripts/python.exe -m pytest -q
 docker compose pull && docker compose up -d
 docker compose logs -f bot
 ```
-
-## Offene Entscheidungen
-
-Siehe „Offen / beim Bauen zu klären" im Design-Dokument.

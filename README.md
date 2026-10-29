@@ -123,6 +123,8 @@ uv pip install pillow --python .venv/Scripts/python.exe
 
 ## Dokumentation
 
+- Wiki: [`llm-wiki/`](llm-wiki/README.md) — Überblick, Architektur, Datenquelle,
+  Filter, Betrieb, Entwicklung
 - Design: `docs/superpowers/specs/2026-10-29-hetzner-auktion-discord-bot-design.md`
 - Plan: `docs/superpowers/plans/2026-10-29-hetzner-auktion-discord-bot.md`
-- Projekt-Wiki: `AGENTS.md`, `TASKS.md`, `CHANGELOG.md`
+- Aufgaben: `TASKS.md` · Historie: `CHANGELOG.md`
