@@ -1,2 +1,0 @@
-[console_scripts]
-hetzner-bot = hetzner_bot.bot.app:main

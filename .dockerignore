@@ -8,3 +8,4 @@ tests
 tools
 .superpowers
 .pytest_cache
+*.egg-info
