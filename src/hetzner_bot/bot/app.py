@@ -44,6 +44,11 @@ class HetznerBot(commands.Bot):
     async def on_ready(self) -> None:
         await self.tree.sync()
         log.info("Eingeloggt als %s", self.user)
+        guild_count = len(self.guilds)
+        log.info("Mitglied in %s Server(n)", guild_count)
+        warning = guild_count_warning(guild_count)
+        if warning:
+            log.warning(warning)
         if not self.poll_loop.is_running():
             self.poll_loop.start()
 

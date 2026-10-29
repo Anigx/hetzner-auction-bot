@@ -19,11 +19,18 @@ Filter an und entscheidet, ob sie bei Treffern getaggt werden will.
 1. Im [Discord Developer Portal](https://discord.com/developers/applications) eine
    Application anlegen und darin einen Bot.
 2. Token kopieren.
-3. Unter *OAuth2 → URL Generator* die Scopes `bot` und `applications.commands`
-   wählen, Berechtigungen: *Nachrichten senden*, *Links einbetten*,
-   *Erwähnungen von @everyone/@here verbieten* (optional).
-4. Bot über die erzeugte URL auf den Server einladen. **Wichtig:** Das muss ein
-   Discord-Server sein — in echte Gruppen-DMs lassen sich Bots nicht einladen.
+3. Unter *OAuth2 → URL Generator* die Scopes `bot` **und** `applications.commands`
+   wählen, Berechtigungen: *Kanäle ansehen*, *Nachrichten senden*,
+   *Links einbetten*, *Nachrichtenverlauf lesen*.
+4. Bot über die erzeugte URL auf den Server einladen.
+
+> **Der Scope `bot` ist Pflicht.** Mit nur `applications.commands` werden die
+> Slash-Commands installiert, der Bot taucht aber unter *Integrationen* statt unter
+> *Mitglieder* auf, ist kein Servermitglied und kann keinen Kanal sehen. `/status`
+> und das Log weisen darauf hin.
+
+> **Gruppen-DMs gehen nicht.** Bots lassen sich nur auf Discord-Servern
+> hinzufügen. Der „Gruppenchat" muss ein (privater) Server sein.
 
 ## Start
 

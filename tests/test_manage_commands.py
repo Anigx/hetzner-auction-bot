@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from hetzner_bot.bot.texts import describe_filter
+from hetzner_bot.bot.texts import describe_filter, guild_count_warning
 from hetzner_bot.domain import Criteria, FilterRecord
 
 
@@ -33,3 +33,10 @@ def test_describe_filter_marks_paused():
         active=False,
     )
     assert "pausiert" in describe_filter(rec, 0)
+
+
+def test_guild_count_warning_names_the_missing_scope():
+    assert guild_count_warning(3) is None
+    text = guild_count_warning(0)
+    assert "bot" in text
+    assert "applications.commands" in text

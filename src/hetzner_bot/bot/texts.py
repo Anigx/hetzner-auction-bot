@@ -55,3 +55,19 @@ def channel_warning(channel_id: int | None) -> str | None:
     if channel_id is None:
         return "Noch kein Kanal eingerichtet — ein Admin muss `/setup` ausführen."
     return None
+
+
+def guild_count_warning(guild_count: int) -> str | None:
+    """Hinweis, wenn der Bot in keinem Server Mitglied ist.
+
+    Leicht zu verwechseln: Eine Einladung nur mit dem Scope ``applications.commands``
+    installiert die Commands, macht den Bot aber nicht zum Mitglied — er steht dann
+    unter Integrationen und kann keinen Kanal sehen.
+    """
+    if guild_count == 0:
+        return (
+            "Bot ist in keinem Server Mitglied. Die Einladung braucht den Scope "
+            "'bot' (nicht nur 'applications.commands') und die Rechte Kanaele "
+            "ansehen, Nachrichten senden, Links einbetten."
+        )
+    return None

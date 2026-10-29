@@ -21,6 +21,9 @@ Alle nennenswerten Änderungen an diesem Projekt. Format nach
   (`docs/superpowers/specs/2026-10-29-hetzner-auktion-discord-bot-design.md`).
 
 ### Behoben
+- 2026-10-29 (v0.2.4): Einladung nur mit `applications.commands` wird jetzt erkannt:
+  Log-Warnung und Hinweis in `/status`, weil der Bot dann unter *Integrationen*
+  statt *Mitglieder* steht und keinen Kanal sieht.
 - 2026-10-29 (v0.2.3): `/setup` brach ab, wenn man eine Kategorie statt eines
   Textkanals wählte (`TransformerError`). Jetzt wird der Kanaltyp geprüft und
   verständlich geantwortet; ohne Argument nimmt `/setup` den aktuellen Kanal.

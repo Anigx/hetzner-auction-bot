@@ -8,7 +8,7 @@ from discord.ext import commands
 
 from hetzner_bot.auction.cpus import unknown_cpu_names
 from hetzner_bot.bot.guards import require_guild_id
-from hetzner_bot.bot.texts import channel_warning, describe_filter, format_local
+from hetzner_bot.bot.texts import channel_warning, describe_filter, format_local, guild_count_warning
 from hetzner_bot.engine.matching import matches
 
 
@@ -113,6 +113,9 @@ class ManageCog(commands.Cog):
         unknown = unknown_cpu_names(server.cpu_name for server in servers)
         if unknown:
             lines.append(f"Unbekannte CPUs (Kern-Filter greift dort nicht): {', '.join(unknown)}")
+        guild_warning = guild_count_warning(len(self.bot.guilds))
+        if guild_warning:
+            lines.append(guild_warning)
         if last_error:
             lines.append(f"Letzter Fehler: {last_error}")
         await interaction.response.send_message("\n".join(lines), ephemeral=True)
