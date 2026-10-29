@@ -30,17 +30,20 @@ Filter an und entscheidet, ob sie bei Treffern getaggt werden will.
 ```bash
 cp .env.example .env
 # DISCORD_TOKEN in .env eintragen
-mkdir -p data
-sudo chown 10001:10001 data      # Container laeuft als uid 10001
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 docker compose logs -f bot
 ```
 
+Das Compose-File zieht `ghcr.io/anigx/hetzner-auction-bot:latest` — es wird nichts
+lokal gebaut. Für reproduzierbare Deploys im Compose-File auf eine feste Version
+pinnen (Zeile ist dort auskommentiert vorbereitet).
+
 Ohne `DISCORD_TOKEN` bricht der Start mit einer klaren Meldung ab.
 
-Das `data/`-Verzeichnis muss vor dem ersten Start existieren und dem Container-User
-gehören — sonst legt Docker es als `root` an und der Bot kann die SQLite-Datei
-nicht öffnen.
+Die Daten liegen im benannten Volume `hetzner-auction-bot-data`. Ein
+`mkdir`/`chown` auf dem Host ist nicht nötig — Docker übernimmt beim ersten Start
+Besitzer und Rechte aus dem Image.
 
 ## Benutzung
 
@@ -71,13 +74,21 @@ Mindestens ein Kriterium muss gesetzt sein.
 docker compose ps               # Healthcheck-Status
 docker compose logs -f bot      # JSON-Zeilen
 docker compose restart bot
-rm data/bot.sqlite3             # alles zurücksetzen (Filter, Verlauf)
+docker compose pull && docker compose up -d   # auf eine neue Version aktualisieren
+docker compose down -v          # Container und Daten-Volume entfernen
 ```
 
-Alternativ das fertige Image aus der GitHub Container Registry:
+Der Container heisst `hetzner-auction-bot`, die Daten liegen im Volume
+`hetzner-auction-bot-data`, das Image kommt aus der GitHub Container Registry
+(`ghcr.io/anigx/hetzner-auction-bot`). Lokal bauen nur, wenn du am Code arbeitest:
+`docker compose build` funktioniert erst, wenn im Compose-File wieder ein
+`build:`-Block steht.
+
+Sicherung des Volumes:
 
 ```bash
-docker pull ghcr.io/anigx/hetzner-auction-bot:latest
+docker run --rm -v hetzner-auction-bot-data:/data -v "$PWD":/backup alpine \
+  tar czf /backup/bot-data.tgz -C /data .
 ```
 
 Der Healthcheck prüft `data/last_poll`: Ist der letzte erfolgreiche Abruf älter als

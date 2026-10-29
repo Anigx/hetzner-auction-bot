@@ -19,10 +19,15 @@ non-root (uid 10001) und bringt einen Healthcheck mit.
 services:
   bot:
     image: __IMAGE__:__VERSION__
+    container_name: hetzner-auction-bot
     env_file: .env
     volumes:
-      - ./data:/app/data
+      - bot-data:/app/data
     restart: unless-stopped
+
+volumes:
+  bot-data:
+    name: hetzner-auction-bot-data
 ```
 
 ## Was drin ist

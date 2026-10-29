@@ -79,7 +79,7 @@ python -m venv .venv && .venv/Scripts/activate   # Windows
 pip install -r requirements.txt
 python bot.py
 pytest
-docker compose up -d --build
+docker compose pull && docker compose up -d
 docker compose logs -f bot
 ```
 
